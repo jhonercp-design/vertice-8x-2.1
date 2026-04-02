@@ -1,65 +1,53 @@
 # Máquina de Vendas - Vértice 8x - TODO
 
-## Fase 1: Fundação
-- [x] Design System de Luxo (Navy/Slate/Orange, tipografia premium, tokens)
-- [x] Schema do banco de dados (empresas, licenças, leads, deals, atividades, mensagens, diagnósticos)
-- [x] Estrutura de navegação DashboardLayout com sidebar tipo cockpit
-- [x] Roteamento completo (todas as páginas registradas)
+## Fundação (Concluído)
+- [x] Design System, Schema DB, Navegação, Roteamento, Páginas visuais
 
-## Fase 2: Dashboard de Comando
-- [x] Dashboard Executivo com KPIs em tempo real
-- [x] Termômetro de Gestão (onde acelerar/reduzir/focar)
-- [x] Onboarding Estratégico (Maturity Score, GAP de Receita, projeção ROI)
-- [x] Cards de métricas animados com Framer Motion
+## Funcionalizar Módulos
 
-## Fase 3: Trilha de Transformação
-- [x] Trilha dos 5 Pilares do Método Vértice (Anatomia, Arquitetura, Ativação, Aceleração, Autoridade)
-- [x] Sistema de desbloqueio progressivo por pilar
-- [x] Conteúdo e tarefas por etapa
-- [x] Indicadores de progresso visual
+### CRM
+- [x] Backend CRUD leads (criar, listar, editar, deletar)
+- [x] Backend CRUD deals (criar, listar, mover estágio, deletar)
+- [x] Backend atividades/timeline do lead
+- [x] Frontend CRM conectado ao banco real
+- [x] Frontend LeadDetail conectado ao banco real
 
-## Fase 4: Inteligência Artificial
-- [x] Copiloto IA Agêntico (chat com contexto da empresa, scripts de prospecção, análise de pipeline)
-- [x] Agente de Governança Comercial (AGC) - auditoria horária 7h-19h, tom executivo
-- [x] Integração LLM (invokeLLM) para ambos os agentes
-- [x] Painel de alertas e recomendações do AGC
+### Dashboard
+- [x] Backend KPIs reais (receita, leads, conversão, pipeline)
+- [x] Backend Termômetro de Gestão dinâmico
+- [x] Frontend Dashboard conectado ao banco real
 
-## Fase 5: CRM e WhatsApp
-- [x] CRM com gestão de Leads e Deals (lista + pipeline view)
-- [x] Timeline Unificada (diagnóstico, propostas, mensagens, calls)
-- [x] Integração WhatsApp Multi-Atendente com QR Code
-- [x] Sincronização de mensagens WhatsApp na Timeline do Lead
+### Trilha
+- [x] Backend progresso da trilha persistido
+- [x] Frontend Trilha conectada ao banco
 
-## Fase 6: Licenciamento e Admin
-- [x] Painel Master Admin (gestão de empresas, usuários, limites de assentos)
-- [x] Dashboard Financeiro (MRR, Churn, LTV, faturamento)
-- [x] Controle de licenças e planos
-- [ ] Sistema Multi-Tenant completo (isolamento real por empresa - Fase 2)
+### Onboarding
+- [x] Backend salvar diagnóstico/maturity score
+- [x] Frontend Onboarding persistindo dados
 
-## Fase 7: Automações e Testes
-- [x] Automações inteligentes (gatilhos CRM → WhatsApp)
-- [x] Alertas automáticos do AGC → ações
-- [x] Testes Vitest para routers e lógica de negócio (5/5 passando)
-- [x] Refinamento de UI/UX e responsividade
+### AGC
+- [x] Backend alertas reais baseados em dados do CRM
+- [x] Frontend AGC com alertas do banco
 
-## Fase 8: Entrega
-- [x] Configurações (perfil, notificações, preferências)
-- [x] Checkpoint final
-- [ ] Validação end-to-end
-- [ ] Entrega do link funcional
+### WhatsApp
+- [x] Backend mensagens internas (chat entre usuários/leads)
+- [x] Frontend WhatsApp conectado ao banco
 
-## Backlog (Pós-Clientes)
-- [ ] CRUD real de leads no CRM (backend + frontend)
-- [ ] CRUD real de deals com pipeline drag-and-drop
-- [ ] Integração WhatsApp real (Baileys/Evolution API)
-- [ ] AGC com auditoria real de hora em hora (cron job)
-- [ ] Trilha com progresso persistido no banco
-- [ ] Onboarding com dados salvos e relatório PDF
-- [ ] Automações com engine de execução real
-- [ ] Dashboard com dados reais do banco
-- [ ] Sistema de notificações push
-- [ ] Multi-tenancy completo (isolamento por empresa)
-- [ ] Roles e permissões granulares
-- [ ] Integração com calendário para agendamentos
-- [ ] Relatórios exportáveis (PDF/Excel)
-- [ ] Webhook para integrações externas
+### Automações
+- [x] Backend CRUD automações (criar, listar, ativar/desativar)
+- [x] Frontend Automações conectado ao banco
+
+### Admin (SaaS Control Panel)
+- [x] Backend CRUD empresas/clientes do SaaS
+- [x] Backend dashboard financeiro real (MRR, churn, receita)
+- [x] Backend controle de licenças e planos
+- [x] Frontend Admin conectado ao banco real
+- [x] Estrutura preparada para integração com gateway de pagamento (link de cobrança)
+
+### Copiloto IA
+- [x] Chat funcional com LLM (já implementado)
+
+### Testes e Entrega
+- [x] Testes vitest para todos os routers (28 testes, todos passando)
+- [x] Validação end-to-end
+- [x] Checkpoint final e entrega
