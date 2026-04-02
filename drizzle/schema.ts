@@ -8,6 +8,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  layer: mysqlEnum("layer", ["direcao", "gerente", "operacional"]).default("operacional").notNull(),
   companyId: int("companyId"),
   avatarUrl: text("avatarUrl"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -27,12 +28,10 @@ export const companies = mysqlTable("companies", {
   website: varchar("website", { length: 500 }),
   logoUrl: text("logoUrl"),
   ownerId: int("ownerId"),
-  // Licensing
   plan: mysqlEnum("plan", ["trial", "starter", "professional", "enterprise"]).default("trial").notNull(),
   maxSeats: int("maxSeats").default(3).notNull(),
   status: mysqlEnum("status", ["active", "suspended", "cancelled"]).default("active").notNull(),
   trialEndsAt: timestamp("trialEndsAt"),
-  // Onboarding data
   maturityScore: int("maturityScore"),
   revenueGap: decimal("revenueGap", { precision: 12, scale: 2 }),
   projectedRoi: decimal("projectedRoi", { precision: 12, scale: 2 }),
@@ -72,6 +71,8 @@ export const leads = mysqlTable("leads", {
   source: varchar("source", { length: 100 }),
   status: mysqlEnum("status", ["new", "contacted", "qualified", "proposal", "negotiation", "won", "lost"]).default("new").notNull(),
   value: decimal("value", { precision: 12, scale: 2 }),
+  icpScore: int("icpScore"),
+  icpFit: mysqlEnum("icpFit", ["A", "B", "C", "D"]),
   notes: text("notes"),
   tags: json("tags"),
   lastContactAt: timestamp("lastContactAt"),
@@ -233,3 +234,118 @@ export const diagnostics = mysqlTable("diagnostics", {
 });
 
 export type Diagnostic = typeof diagnostics.$inferSelect;
+
+// ===== GOALS (Metas) =====
+export const goals = mysqlTable("goals", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  userId: int("userId"),
+  label: varchar("label", { length: 255 }).notNull(),
+  target: decimal("target", { precision: 14, scale: 2 }).notNull(),
+  current: decimal("current", { precision: 14, scale: 2 }).default("0"),
+  unit: varchar("unit", { length: 20 }).default("R$"),
+  period: varchar("period", { length: 50 }).default("monthly"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Goal = typeof goals.$inferSelect;
+
+// ===== KPIs =====
+export const kpis = mysqlTable("kpis", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  label: varchar("label", { length: 255 }).notNull(),
+  value: decimal("value", { precision: 14, scale: 2 }).default("0"),
+  change: decimal("change", { precision: 8, scale: 2 }).default("0"),
+  trend: mysqlEnum("trend", ["up", "down", "stable"]).default("stable"),
+  category: varchar("category", { length: 100 }).default("Vendas"),
+  unit: varchar("unit", { length: 20 }).default(""),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type KPI = typeof kpis.$inferSelect;
+
+// ===== PRODUCTS =====
+export const products = mysqlTable("products", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 100 }),
+  price: decimal("price", { precision: 12, scale: 2 }),
+  status: mysqlEnum("status", ["active", "inactive", "draft"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Product = typeof products.$inferSelect;
+
+// ===== PROJECTS =====
+export const projects = mysqlTable("projects", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  client: varchar("client", { length: 255 }),
+  status: mysqlEnum("status", ["planning", "execution", "review", "completed"]).default("planning").notNull(),
+  progress: int("progress").default(0),
+  budget: decimal("budget", { precision: 12, scale: 2 }),
+  spent: decimal("spent", { precision: 12, scale: 2 }).default("0"),
+  deadline: timestamp("deadline"),
+  category: varchar("category", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Project = typeof projects.$inferSelect;
+
+// ===== PLAYBOOKS =====
+export const playbooks = mysqlTable("playbooks", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  framework: varchar("framework", { length: 100 }),
+  steps: int("steps").default(0),
+  usageRate: int("usageRate").default(0),
+  isActive: boolean("isActive").default(true).notNull(),
+  content: json("content"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Playbook = typeof playbooks.$inferSelect;
+
+// ===== PROPOSALS =====
+export const proposals = mysqlTable("proposals", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  dealId: int("dealId"),
+  leadId: int("leadId"),
+  title: varchar("title", { length: 255 }).notNull(),
+  value: decimal("value", { precision: 12, scale: 2 }),
+  status: mysqlEnum("status", ["draft", "sent", "viewed", "negotiation", "signed", "rejected"]).default("draft").notNull(),
+  sentAt: timestamp("sentAt"),
+  signedAt: timestamp("signedAt"),
+  content: json("content"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Proposal = typeof proposals.$inferSelect;
+
+// ===== GAMIFICATION =====
+export const gamificationScores = mysqlTable("gamification_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  userId: int("userId").notNull(),
+  points: int("points").default(0),
+  level: int("level").default(1),
+  badges: json("badges"),
+  weeklyPoints: int("weeklyPoints").default(0),
+  monthlyPoints: int("monthlyPoints").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type GamificationScore = typeof gamificationScores.$inferSelect;

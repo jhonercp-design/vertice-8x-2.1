@@ -13,6 +13,13 @@ import {
   aiConversations,
   automations,
   diagnostics,
+  goals,
+  kpis,
+  products,
+  projects,
+  playbooks,
+  proposals,
+  gamificationScores,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -20,12 +27,7 @@ let _db: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
-    try {
-      _db = drizzle(process.env.DATABASE_URL);
-    } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
-      _db = null;
-    }
+    try { _db = drizzle(process.env.DATABASE_URL); } catch (error) { console.warn("[Database] Failed to connect:", error); _db = null; }
   }
   return _db;
 }
@@ -33,20 +35,13 @@ export async function getDb() {
 // ===== USERS =====
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
-  const db = await getDb();
-  if (!db) return;
+  const db = await getDb(); if (!db) return;
   try {
     const values: InsertUser = { openId: user.openId };
     const updateSet: Record<string, unknown> = {};
     const textFields = ["name", "email", "loginMethod"] as const;
     type TextField = (typeof textFields)[number];
-    const assignNullable = (field: TextField) => {
-      const value = user[field];
-      if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
-    };
+    const assignNullable = (field: TextField) => { const value = user[field]; if (value === undefined) return; const normalized = value ?? null; values[field] = normalized; updateSet[field] = normalized; };
     textFields.forEach(assignNullable);
     if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
     if (user.role !== undefined) { values.role = user.role; updateSet.role = user.role; }
@@ -58,10 +53,20 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 }
 
 export async function getUserByOpenId(openId: string) {
-  const db = await getDb();
-  if (!db) return undefined;
+  const db = await getDb(); if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUsers(companyId?: number) {
+  const db = await getDb(); if (!db) return [];
+  if (companyId) return db.select().from(users).where(eq(users.companyId, companyId));
+  return db.select().from(users);
+}
+
+export async function updateUserLayer(userId: number, layer: "direcao" | "gerente" | "operacional") {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.update(users).set({ layer }).where(eq(users.id, userId));
 }
 
 // ===== LEADS =====
@@ -75,9 +80,7 @@ export async function getLeads(companyId: number, search?: string) {
   const db = await getDb(); if (!db) return [];
   let query = db.select().from(leads).where(eq(leads.companyId, companyId));
   if (search) {
-    query = db.select().from(leads).where(
-      and(eq(leads.companyId, companyId), or(like(leads.name, `%${search}%`), like(leads.company, `%${search}%`)))
-    );
+    query = db.select().from(leads).where(and(eq(leads.companyId, companyId), or(like(leads.name, `%${search}%`), like(leads.company, `%${search}%`))));
   }
   return query.orderBy(desc(leads.updatedAt));
 }
@@ -166,34 +169,26 @@ export async function deleteCompany(id: number) {
 }
 
 export async function getAdminStats() {
-  const db = await getDb(); if (!db) return { totalCompanies: 0, activeCompanies: 0, totalUsers: 0, totalMrr: "0" };
-  const [companyStats] = await db.select({
-    totalCompanies: count(),
-    activeCompanies: sum(sql`CASE WHEN ${companies.status} = 'active' THEN 1 ELSE 0 END`),
-  }).from(companies);
+  const db = await getDb(); if (!db) return { totalCompanies: 0, activeCompanies: 0, totalUsers: 0, totalMrr: "0", churnRate: 0 };
+  const [companyStats] = await db.select({ totalCompanies: count(), activeCompanies: sum(sql`CASE WHEN ${companies.status} = 'active' THEN 1 ELSE 0 END`) }).from(companies);
   const [userStats] = await db.select({ totalUsers: count() }).from(users);
-  const [licenseStats] = await db.select({
-    totalMrr: sum(licenses.monthlyPrice),
-  }).from(licenses).where(eq(licenses.status, "active"));
+  const [licenseStats] = await db.select({ totalMrr: sum(licenses.monthlyPrice) }).from(licenses).where(eq(licenses.status, "active"));
+  const totalC = companyStats?.totalCompanies || 0;
+  const activeC = Number(companyStats?.activeCompanies) || 0;
   return {
-    totalCompanies: companyStats?.totalCompanies || 0,
-    activeCompanies: Number(companyStats?.activeCompanies) || 0,
+    totalCompanies: totalC,
+    activeCompanies: activeC,
     totalUsers: userStats?.totalUsers || 0,
     totalMrr: licenseStats?.totalMrr || "0",
+    churnRate: totalC > 0 ? Math.round(((totalC - activeC) / totalC) * 100 * 10) / 10 : 0,
   };
 }
 
 // ===== DASHBOARD KPIs =====
 export async function getDashboardKpis(companyId: number) {
-  const db = await getDb(); if (!db) return { totalLeads: 0, totalRevenue: "0", conversionRate: 0, pipelineValue: "0" };
-  const [leadStats] = await db.select({
-    totalLeads: count(),
-    wonLeads: sum(sql`CASE WHEN ${leads.status} = 'won' THEN 1 ELSE 0 END`),
-  }).from(leads).where(eq(leads.companyId, companyId));
-  const [dealStats] = await db.select({
-    pipelineValue: sum(deals.value),
-    wonValue: sum(sql`CASE WHEN ${deals.stage} = 'won' THEN ${deals.value} ELSE 0 END`),
-  }).from(deals).where(eq(deals.companyId, companyId));
+  const db = await getDb(); if (!db) return { totalLeads: 0, totalRevenue: "0", conversionRate: 0, pipelineValue: "0", wonDeals: 0, totalDeals: 0 };
+  const [leadStats] = await db.select({ totalLeads: count(), wonLeads: sum(sql`CASE WHEN ${leads.status} = 'won' THEN 1 ELSE 0 END`) }).from(leads).where(eq(leads.companyId, companyId));
+  const [dealStats] = await db.select({ pipelineValue: sum(deals.value), wonValue: sum(sql`CASE WHEN ${deals.stage} = 'won' THEN ${deals.value} ELSE 0 END`), totalDeals: count(), wonDeals: sum(sql`CASE WHEN ${deals.stage} = 'won' THEN 1 ELSE 0 END`) }).from(deals).where(eq(deals.companyId, companyId));
   const total = leadStats?.totalLeads || 0;
   const won = Number(leadStats?.wonLeads) || 0;
   return {
@@ -201,39 +196,30 @@ export async function getDashboardKpis(companyId: number) {
     totalRevenue: dealStats?.wonValue || "0",
     conversionRate: total > 0 ? Math.round((won / total) * 100 * 10) / 10 : 0,
     pipelineValue: dealStats?.pipelineValue || "0",
+    wonDeals: Number(dealStats?.wonDeals) || 0,
+    totalDeals: dealStats?.totalDeals || 0,
   };
 }
 
 export async function getPipelineSummary(companyId: number) {
   const db = await getDb(); if (!db) return [];
-  return db.select({
-    stage: deals.stage,
-    count: count(),
-    value: sum(deals.value),
-  }).from(deals).where(eq(deals.companyId, companyId)).groupBy(deals.stage);
+  return db.select({ stage: deals.stage, count: count(), value: sum(deals.value) }).from(deals).where(eq(deals.companyId, companyId)).groupBy(deals.stage);
 }
 
 export async function getLeadsByStatus(companyId: number) {
   const db = await getDb(); if (!db) return [];
-  return db.select({
-    status: leads.status,
-    count: count(),
-  }).from(leads).where(eq(leads.companyId, companyId)).groupBy(leads.status);
+  return db.select({ status: leads.status, count: count() }).from(leads).where(eq(leads.companyId, companyId)).groupBy(leads.status);
 }
 
 // ===== TRAIL PROGRESS =====
 export async function getTrailProgress(companyId: number, userId: number) {
   const db = await getDb(); if (!db) return [];
-  return db.select().from(trailProgress).where(
-    and(eq(trailProgress.companyId, companyId), eq(trailProgress.userId, userId))
-  );
+  return db.select().from(trailProgress).where(and(eq(trailProgress.companyId, companyId), eq(trailProgress.userId, userId)));
 }
 
 export async function upsertTrailProgress(companyId: number, userId: number, pillar: string, stepIndex: number, totalSteps: number, status: string) {
   const db = await getDb(); if (!db) throw new Error("DB not available");
-  const existing = await db.select().from(trailProgress).where(
-    and(eq(trailProgress.companyId, companyId), eq(trailProgress.userId, userId), eq(trailProgress.pillar, pillar as any))
-  ).limit(1);
+  const existing = await db.select().from(trailProgress).where(and(eq(trailProgress.companyId, companyId), eq(trailProgress.userId, userId), eq(trailProgress.pillar, pillar as any))).limit(1);
   if (existing.length > 0) {
     await db.update(trailProgress).set({ stepIndex, status: status as any, completedAt: status === "completed" ? new Date() : null }).where(eq(trailProgress.id, existing[0].id));
   } else {
@@ -292,14 +278,10 @@ export async function getDiagnostics(companyId: number) {
   return db.select().from(diagnostics).where(eq(diagnostics.companyId, companyId)).orderBy(desc(diagnostics.createdAt));
 }
 
-// ===== WHATSAPP MESSAGES (internal) =====
+// ===== WHATSAPP =====
 export async function getWhatsappMessages(companyId: number, leadId?: number) {
   const db = await getDb(); if (!db) return [];
-  if (leadId) {
-    return db.select().from(whatsappMessages).where(
-      and(eq(whatsappMessages.companyId, companyId), eq(whatsappMessages.leadId, leadId))
-    ).orderBy(whatsappMessages.timestamp);
-  }
+  if (leadId) return db.select().from(whatsappMessages).where(and(eq(whatsappMessages.companyId, companyId), eq(whatsappMessages.leadId, leadId))).orderBy(whatsappMessages.timestamp);
   return db.select().from(whatsappMessages).where(eq(whatsappMessages.companyId, companyId)).orderBy(desc(whatsappMessages.timestamp)).limit(100);
 }
 
@@ -319,4 +301,154 @@ export async function createLicense(data: { companyId: number; plan: any; monthl
 export async function getLicensesByCompany(companyId: number) {
   const db = await getDb(); if (!db) return [];
   return db.select().from(licenses).where(eq(licenses.companyId, companyId)).orderBy(desc(licenses.createdAt));
+}
+
+// ===== GOALS =====
+export async function getGoals(companyId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(goals).where(eq(goals.companyId, companyId)).orderBy(desc(goals.updatedAt));
+}
+
+export async function createGoal(data: { companyId: number; userId?: number; label: string; target: string; current?: string; unit?: string; period?: string }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  const result = await db.insert(goals).values(data);
+  return { id: result[0].insertId };
+}
+
+export async function updateGoal(id: number, data: { label?: string; target?: string; current?: string; unit?: string; period?: string }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.update(goals).set(data).where(eq(goals.id, id));
+}
+
+export async function deleteGoal(id: number) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.delete(goals).where(eq(goals.id, id));
+}
+
+// ===== KPIs =====
+export async function getKpis(companyId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(kpis).where(eq(kpis.companyId, companyId)).orderBy(desc(kpis.updatedAt));
+}
+
+export async function createKpi(data: { companyId: number; label: string; value?: string; change?: string; trend?: "up" | "down" | "stable"; category?: string; unit?: string }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  const result = await db.insert(kpis).values(data);
+  return { id: result[0].insertId };
+}
+
+export async function updateKpi(id: number, data: { label?: string; value?: string; change?: string; trend?: "up" | "down" | "stable"; category?: string; unit?: string }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.update(kpis).set(data).where(eq(kpis.id, id));
+}
+
+export async function deleteKpi(id: number) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.delete(kpis).where(eq(kpis.id, id));
+}
+
+// ===== PRODUCTS =====
+export async function getProducts(companyId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(products).where(eq(products.companyId, companyId)).orderBy(desc(products.updatedAt));
+}
+
+export async function createProduct(data: { companyId: number; name: string; description?: string; category?: string; price?: string; status?: "active" | "inactive" | "draft" }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  const result = await db.insert(products).values(data);
+  return { id: result[0].insertId };
+}
+
+export async function updateProduct(id: number, data: { name?: string; description?: string; category?: string; price?: string; status?: "active" | "inactive" | "draft" }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.update(products).set(data).where(eq(products.id, id));
+}
+
+export async function deleteProduct(id: number) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.delete(products).where(eq(products.id, id));
+}
+
+// ===== PROJECTS =====
+export async function getProjects(companyId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(projects).where(eq(projects.companyId, companyId)).orderBy(desc(projects.updatedAt));
+}
+
+export async function createProject(data: { companyId: number; name: string; client?: string; status?: "planning" | "execution" | "review" | "completed"; budget?: string; category?: string; deadline?: Date }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  const result = await db.insert(projects).values(data);
+  return { id: result[0].insertId };
+}
+
+export async function updateProject(id: number, data: { name?: string; client?: string; status?: "planning" | "execution" | "review" | "completed"; progress?: number; budget?: string; spent?: string; category?: string }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.update(projects).set(data).where(eq(projects.id, id));
+}
+
+export async function deleteProject(id: number) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.delete(projects).where(eq(projects.id, id));
+}
+
+// ===== PLAYBOOKS =====
+export async function getPlaybooks(companyId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(playbooks).where(eq(playbooks.companyId, companyId)).orderBy(desc(playbooks.updatedAt));
+}
+
+export async function createPlaybook(data: { companyId: number; name: string; framework?: string; steps?: number; content?: any }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  const result = await db.insert(playbooks).values(data);
+  return { id: result[0].insertId };
+}
+
+export async function updatePlaybook(id: number, data: { name?: string; framework?: string; steps?: number; usageRate?: number; isActive?: boolean; content?: any })  {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.update(playbooks).set(data).where(eq(playbooks.id, id));
+}
+
+export async function deletePlaybook(id: number) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.delete(playbooks).where(eq(playbooks.id, id));
+}
+
+// ===== PROPOSALS =====
+export async function getProposals(companyId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(proposals).where(eq(proposals.companyId, companyId)).orderBy(desc(proposals.updatedAt));
+}
+
+export async function createProposal(data: { companyId: number; dealId?: number; leadId?: number; title: string; value?: string; content?: any }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  const result = await db.insert(proposals).values(data);
+  return { id: result[0].insertId };
+}
+
+export async function updateProposal(id: number, data: { title?: string; value?: string; status?: "draft" | "sent" | "viewed" | "negotiation" | "signed" | "rejected"; sentAt?: Date; signedAt?: Date; content?: any }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.update(proposals).set(data).where(eq(proposals.id, id));
+}
+
+export async function deleteProposal(id: number) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.delete(proposals).where(eq(proposals.id, id));
+}
+
+// ===== GAMIFICATION =====
+export async function getGamificationScores(companyId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(gamificationScores).where(eq(gamificationScores.companyId, companyId)).orderBy(desc(gamificationScores.points));
+}
+
+export async function upsertGamificationScore(companyId: number, userId: number, pointsToAdd: number) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  const existing = await db.select().from(gamificationScores).where(and(eq(gamificationScores.companyId, companyId), eq(gamificationScores.userId, userId))).limit(1);
+  if (existing.length > 0) {
+    const newPoints = (existing[0].points || 0) + pointsToAdd;
+    const newLevel = Math.floor(newPoints / 100) + 1;
+    await db.update(gamificationScores).set({ points: newPoints, level: newLevel, weeklyPoints: (existing[0].weeklyPoints || 0) + pointsToAdd, monthlyPoints: (existing[0].monthlyPoints || 0) + pointsToAdd }).where(eq(gamificationScores.id, existing[0].id));
+  } else {
+    await db.insert(gamificationScores).values({ companyId, userId, points: pointsToAdd, level: 1, weeklyPoints: pointsToAdd, monthlyPoints: pointsToAdd });
+  }
 }

@@ -4,34 +4,77 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { lazy, Suspense } from "react";
+
+// Eager load critical pages
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
-import Trail from "./pages/Trail";
-import Copilot from "./pages/Copilot";
-import AGC from "./pages/AGC";
-import CRM from "./pages/CRM";
-import LeadDetail from "./pages/LeadDetail";
-import Automations from "./pages/Automations";
-import WhatsApp from "./pages/WhatsApp";
-import Admin from "./pages/Admin";
-import Onboarding from "./pages/Onboarding";
-import Settings from "./pages/Settings";
+
+// Lazy load all other pages
+const Trail = lazy(() => import("./pages/Trail"));
+const Copilot = lazy(() => import("./pages/Copilot"));
+const AGC = lazy(() => import("./pages/AGC"));
+const CRM = lazy(() => import("./pages/CRM"));
+const LeadDetail = lazy(() => import("./pages/LeadDetail"));
+const Automations = lazy(() => import("./pages/Automations"));
+const WhatsApp = lazy(() => import("./pages/WhatsApp"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Goals = lazy(() => import("./pages/Goals"));
+const KPIs = lazy(() => import("./pages/KPIs"));
+const ICP = lazy(() => import("./pages/ICP"));
+const Forecast = lazy(() => import("./pages/Forecast"));
+const Playbooks = lazy(() => import("./pages/Playbooks"));
+const Proposals = lazy(() => import("./pages/Proposals"));
+const Products = lazy(() => import("./pages/Products"));
+const Projects = lazy(() => import("./pages/Projects"));
+const Reports = lazy(() => import("./pages/Reports"));
+const DemandGen = lazy(() => import("./pages/DemandGen"));
+const PostSales = lazy(() => import("./pages/PostSales"));
+const Gamification = lazy(() => import("./pages/Gamification"));
+const Methodology = lazy(() => import("./pages/Methodology"));
+
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+      {children}
+    </Suspense>
+  );
+}
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/dashboard" component={Dashboard} />
-      <Route path="/trail" component={Trail} />
-      <Route path="/copilot" component={Copilot} />
-      <Route path="/agc" component={AGC} />
+      {/* Estratégia */}
+      <Route path="/trail">{() => <LazyPage><Trail /></LazyPage>}</Route>
+      <Route path="/goals">{() => <LazyPage><Goals /></LazyPage>}</Route>
+      <Route path="/kpis">{() => <LazyPage><KPIs /></LazyPage>}</Route>
+      <Route path="/icp">{() => <LazyPage><ICP /></LazyPage>}</Route>
+      <Route path="/forecast">{() => <LazyPage><Forecast /></LazyPage>}</Route>
+      {/* Operacional */}
       <Route path="/crm" component={CRM} />
-      <Route path="/crm/lead/:id" component={LeadDetail} />
-      <Route path="/automations" component={Automations} />
-      <Route path="/whatsapp" component={WhatsApp} />
-      <Route path="/admin" component={Admin} />
-      <Route path="/onboarding" component={Onboarding} />
-      <Route path="/settings" component={Settings} />
+      <Route path="/crm/lead/:id">{(params) => <LazyPage><LeadDetail /></LazyPage>}</Route>
+      <Route path="/whatsapp">{() => <LazyPage><WhatsApp /></LazyPage>}</Route>
+      <Route path="/playbooks">{() => <LazyPage><Playbooks /></LazyPage>}</Route>
+      <Route path="/proposals">{() => <LazyPage><Proposals /></LazyPage>}</Route>
+      <Route path="/products">{() => <LazyPage><Products /></LazyPage>}</Route>
+      <Route path="/projects">{() => <LazyPage><Projects /></LazyPage>}</Route>
+      {/* Analítico */}
+      <Route path="/agc">{() => <LazyPage><AGC /></LazyPage>}</Route>
+      <Route path="/copilot">{() => <LazyPage><Copilot /></LazyPage>}</Route>
+      <Route path="/reports">{() => <LazyPage><Reports /></LazyPage>}</Route>
+      <Route path="/demand">{() => <LazyPage><DemandGen /></LazyPage>}</Route>
+      <Route path="/post-sales">{() => <LazyPage><PostSales /></LazyPage>}</Route>
+      <Route path="/gamification">{() => <LazyPage><Gamification /></LazyPage>}</Route>
+      {/* Sistema */}
+      <Route path="/automations">{() => <LazyPage><Automations /></LazyPage>}</Route>
+      <Route path="/onboarding">{() => <LazyPage><Onboarding /></LazyPage>}</Route>
+      <Route path="/methodology">{() => <LazyPage><Methodology /></LazyPage>}</Route>
+      <Route path="/admin">{() => <LazyPage><Admin /></LazyPage>}</Route>
+      <Route path="/settings">{() => <LazyPage><Settings /></LazyPage>}</Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

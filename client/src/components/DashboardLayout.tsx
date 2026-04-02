@@ -1,79 +1,84 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarSeparator,
-  useSidebar,
+  Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton,
+  SidebarMenuItem, SidebarProvider, SidebarTrigger, SidebarGroup, SidebarGroupLabel, SidebarSeparator, useSidebar,
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  LayoutDashboard,
-  LogOut,
-  PanelLeft,
-  Route,
-  Bot,
-  ShieldCheck,
-  Users,
-  Zap,
-  MessageCircle,
-  Settings,
-  Crown,
-  Gauge,
+  LayoutDashboard, LogOut, PanelLeft, Route, Bot, ShieldCheck, Users, Zap, MessageCircle,
+  Settings, Crown, Gauge, Target, BarChart3, Package, FolderKanban, BookOpen, FileText,
+  Trophy, TrendingUp, Crosshair, Rocket, Calculator, RefreshCw, Handshake, Lightbulb,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 
-const mainMenuItems = [
+// ===== NAVIGATION STRUCTURE: 4 Verticals =====
+
+type MenuItem = {
+  icon: any;
+  label: string;
+  path: string;
+  founderOnly?: boolean;
+  layers?: ("direcao" | "gerente" | "operacional")[];
+};
+
+const estrategiaItems: MenuItem[] = [
   { icon: Gauge, label: "Comando", path: "/dashboard" },
   { icon: Route, label: "Trilha", path: "/trail" },
-  { icon: Bot, label: "Copiloto IA", path: "/copilot" },
-  { icon: ShieldCheck, label: "AGC", path: "/agc" },
+  { icon: Target, label: "Metas", path: "/goals" },
+  { icon: BarChart3, label: "KPIs", path: "/kpis" },
+  { icon: Crosshair, label: "ICP Builder", path: "/icp" },
+  { icon: Calculator, label: "Forecast", path: "/forecast" },
 ];
 
-const operationMenuItems = [
+const operacionalItems: MenuItem[] = [
   { icon: Users, label: "CRM", path: "/crm" },
   { icon: MessageCircle, label: "WhatsApp", path: "/whatsapp" },
-  { icon: Zap, label: "Automações", path: "/automations" },
+  { icon: BookOpen, label: "Playbooks", path: "/playbooks" },
+  { icon: FileText, label: "Propostas", path: "/proposals" },
+  { icon: Package, label: "Produtos", path: "/products" },
+  { icon: FolderKanban, label: "Projetos", path: "/projects" },
 ];
 
-const systemMenuItems = [
-  { icon: Crown, label: "Master Admin", path: "/admin", adminOnly: true },
+const analiticoItems: MenuItem[] = [
+  { icon: ShieldCheck, label: "AGC", path: "/agc" },
+  { icon: Bot, label: "Copiloto IA", path: "/copilot" },
+  { icon: TrendingUp, label: "Relatórios", path: "/reports" },
+  { icon: Rocket, label: "Geração de Demanda", path: "/demand" },
+  { icon: Handshake, label: "Pós-Venda", path: "/post-sales" },
+  { icon: Trophy, label: "Gamificação", path: "/gamification" },
+];
+
+const sistemaItems: MenuItem[] = [
+  { icon: Zap, label: "Automações", path: "/automations" },
+  { icon: Lightbulb, label: "Onboarding", path: "/onboarding" },
+  { icon: RefreshCw, label: "Metodologia", path: "/methodology" },
+  { icon: Crown, label: "Master Admin", path: "/admin", founderOnly: true },
   { icon: Settings, label: "Configurações", path: "/settings" },
 ];
 
-const allMenuItems = [...mainMenuItems, ...operationMenuItems, ...systemMenuItems];
+const allMenuItems = [...estrategiaItems, ...operacionalItems, ...analiticoItems, ...sistemaItems];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 260;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 400;
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function canAccess(item: MenuItem, userLayer?: string, isFounder?: boolean): boolean {
+  if (item.founderOnly && !isFounder) return false;
+  // Layer-based filtering: if item has layers defined, check user layer
+  if (item.layers && userLayer && !item.layers.includes(userLayer as any)) return false;
+  return true;
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
@@ -84,9 +89,7 @@ export default function DashboardLayout({
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
-  if (loading) {
-    return <DashboardLayoutSkeleton />;
-  }
+  if (loading) return <DashboardLayoutSkeleton />;
 
   if (!user) {
     return (
@@ -98,25 +101,15 @@ export default function DashboardLayout({
                 <Gauge className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h1 className="text-xl font-bold tracking-tight text-foreground">
-                  Máquina de Vendas
-                </h1>
-                <p className="text-xs text-muted-foreground font-medium tracking-wider uppercase">
-                  Vértice 8x
-                </p>
+                <h1 className="text-xl font-bold tracking-tight text-foreground">Máquina de Vendas</h1>
+                <p className="text-xs text-muted-foreground font-medium tracking-wider uppercase">Vértice 8x</p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground text-center max-w-sm mt-2">
               Acesse o cockpit de comando da sua operação comercial.
             </p>
           </div>
-          <Button
-            onClick={() => {
-              window.location.href = getLoginUrl();
-            }}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all bg-primary text-primary-foreground"
-          >
+          <Button onClick={() => { window.location.href = getLoginUrl(); }} size="lg" className="w-full shadow-lg hover:shadow-xl transition-all bg-primary text-primary-foreground">
             Entrar na Plataforma
           </Button>
         </div>
@@ -125,29 +118,42 @@ export default function DashboardLayout({
   }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": `${sidebarWidth}px`,
-        } as CSSProperties
-      }
-    >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
-        {children}
-      </DashboardLayoutContent>
+    <SidebarProvider style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>{children}</DashboardLayoutContent>
     </SidebarProvider>
   );
 }
 
-type DashboardLayoutContentProps = {
-  children: React.ReactNode;
-  setSidebarWidth: (width: number) => void;
-};
+type DashboardLayoutContentProps = { children: React.ReactNode; setSidebarWidth: (width: number) => void };
 
-function DashboardLayoutContent({
-  children,
-  setSidebarWidth,
-}: DashboardLayoutContentProps) {
+function NavGroup({ label, items, location, setLocation, userLayer, isFounder }: {
+  label: string; items: MenuItem[]; location: string; setLocation: (path: string) => void; userLayer?: string; isFounder?: boolean;
+}) {
+  const filtered = items.filter((item) => canAccess(item, userLayer, isFounder));
+  if (filtered.length === 0) return null;
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold">
+        {label}
+      </SidebarGroupLabel>
+      <SidebarMenu>
+        {filtered.map((item) => {
+          const isActive = location === item.path || (item.path !== "/" && location.startsWith(item.path + "/")) || location.startsWith(item.path);
+          return (
+            <SidebarMenuItem key={item.path}>
+              <SidebarMenuButton isActive={isActive} onClick={() => setLocation(item.path)} tooltip={item.label} className="h-9 transition-all font-normal">
+                <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : "text-sidebar-foreground/60"}`} />
+                <span className={isActive ? "text-primary font-medium" : ""}>{item.label}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        })}
+      </SidebarMenu>
+    </SidebarGroup>
+  );
+}
+
+function DashboardLayoutContent({ children, setSidebarWidth }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
@@ -156,26 +162,19 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = allMenuItems.find((item) => location.startsWith(item.path));
   const isMobile = useIsMobile();
-  const isAdmin = user?.role === "admin";
+  const isFounder = user?.role === "admin";
+  const userLayer = (user as any)?.layer || "operacional";
 
-  useEffect(() => {
-    if (isCollapsed) {
-      setIsResizing(false);
-    }
-  }, [isCollapsed]);
+  useEffect(() => { if (isCollapsed) setIsResizing(false); }, [isCollapsed]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
-      const sidebarLeft =
-        sidebarRef.current?.getBoundingClientRect().left ?? 0;
+      const sidebarLeft = sidebarRef.current?.getBoundingClientRect().left ?? 0;
       const newWidth = e.clientX - sidebarLeft;
-      if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
-        setSidebarWidth(newWidth);
-      }
+      if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) setSidebarWidth(newWidth);
     };
     const handleMouseUp = () => setIsResizing(false);
-
     if (isResizing) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
@@ -193,159 +192,52 @@ function DashboardLayoutContent({
   return (
     <>
       <div className="relative" ref={sidebarRef}>
-        <Sidebar
-          collapsible="icon"
-          className="border-r-0"
-          disableTransition={isResizing}
-        >
+        <Sidebar collapsible="icon" className="border-r-0" disableTransition={isResizing}>
           <SidebarHeader className="h-16 justify-center">
             <div className="flex items-center gap-3 px-2 transition-all w-full">
-              <button
-                onClick={toggleSidebar}
-                className="h-8 w-8 flex items-center justify-center hover:bg-sidebar-accent rounded-lg transition-colors focus:outline-none shrink-0"
-                aria-label="Toggle navigation"
-              >
+              <button onClick={toggleSidebar} className="h-8 w-8 flex items-center justify-center hover:bg-sidebar-accent rounded-lg transition-colors focus:outline-none shrink-0" aria-label="Toggle navigation">
                 <PanelLeft className="h-4 w-4 text-sidebar-foreground/60" />
               </button>
               {!isCollapsed && (
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-bold tracking-tight text-sm text-sidebar-foreground truncate">
-                    Máquina de Vendas
-                  </span>
+                  <span className="font-bold tracking-tight text-sm text-sidebar-foreground truncate">Máquina de Vendas</span>
                 </div>
               )}
             </div>
           </SidebarHeader>
 
           <SidebarContent className="gap-0 px-2">
-            {/* Estratégia */}
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold">
-                Estratégia
-              </SidebarGroupLabel>
-              <SidebarMenu>
-                {mainMenuItems.map((item) => {
-                  const isActive = location.startsWith(item.path);
-                  return (
-                    <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        onClick={() => setLocation(item.path)}
-                        tooltip={item.label}
-                        className="h-9 transition-all font-normal"
-                      >
-                        <item.icon
-                          className={`h-4 w-4 ${isActive ? "text-primary" : "text-sidebar-foreground/60"}`}
-                        />
-                        <span className={isActive ? "text-primary font-medium" : ""}>
-                          {item.label}
-                        </span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroup>
-
-            <SidebarSeparator className="my-2 opacity-30" />
-
-            {/* Operação */}
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold">
-                Operação
-              </SidebarGroupLabel>
-              <SidebarMenu>
-                {operationMenuItems.map((item) => {
-                  const isActive = location.startsWith(item.path);
-                  return (
-                    <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        onClick={() => setLocation(item.path)}
-                        tooltip={item.label}
-                        className="h-9 transition-all font-normal"
-                      >
-                        <item.icon
-                          className={`h-4 w-4 ${isActive ? "text-primary" : "text-sidebar-foreground/60"}`}
-                        />
-                        <span className={isActive ? "text-primary font-medium" : ""}>
-                          {item.label}
-                        </span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
-              </SidebarMenu>
-            </SidebarGroup>
-
-            <SidebarSeparator className="my-2 opacity-30" />
-
-            {/* Sistema */}
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold">
-                Sistema
-              </SidebarGroupLabel>
-              <SidebarMenu>
-                {systemMenuItems
-                  .filter((item) => !item.adminOnly || isAdmin)
-                  .map((item) => {
-                    const isActive = location.startsWith(item.path);
-                    return (
-                      <SidebarMenuItem key={item.path}>
-                        <SidebarMenuButton
-                          isActive={isActive}
-                          onClick={() => setLocation(item.path)}
-                          tooltip={item.label}
-                          className="h-9 transition-all font-normal"
-                        >
-                          <item.icon
-                            className={`h-4 w-4 ${isActive ? "text-primary" : "text-sidebar-foreground/60"}`}
-                          />
-                          <span className={isActive ? "text-primary font-medium" : ""}>
-                            {item.label}
-                          </span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-              </SidebarMenu>
-            </SidebarGroup>
+            <NavGroup label="Estratégia" items={estrategiaItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} />
+            <SidebarSeparator className="my-3 opacity-30" />
+            <NavGroup label="Operacional" items={operacionalItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} />
+            <SidebarSeparator className="my-3 opacity-30" />
+            <NavGroup label="Analítico" items={analiticoItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} />
+            <SidebarSeparator className="my-3 opacity-30" />
+            <NavGroup label="Sistema" items={sistemaItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} />
           </SidebarContent>
 
           <SidebarFooter className="p-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-sidebar-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none">
+                <button className="flex items-center gap-3 w-full rounded-lg p-2 hover:bg-sidebar-accent transition-colors text-left">
                   <Avatar className="h-8 w-8 border border-sidebar-border shrink-0">
                     <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
                       {user?.name?.charAt(0).toUpperCase() || "V"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none text-sidebar-foreground">
-                      {user?.name || "Usuário"}
-                    </p>
-                    <p className="text-[11px] text-sidebar-foreground/50 truncate mt-1">
-                      {user?.email || ""}
-                    </p>
+                    <p className="text-sm font-medium truncate leading-none text-sidebar-foreground">{user?.name || "Usuário"}</p>
+                    <p className="text-[11px] text-sidebar-foreground/50 truncate mt-1">{user?.email || ""}</p>
                   </div>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={() => setLocation("/settings")}
-                  className="cursor-pointer"
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Configurações</span>
+                <DropdownMenuItem onClick={() => setLocation("/settings")} className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" /><span>Configurações</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="cursor-pointer text-destructive focus:text-destructive"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sair</span>
+                <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" /><span>Sair</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -353,10 +245,7 @@ function DashboardLayoutContent({
         </Sidebar>
         <div
           className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
-          onMouseDown={() => {
-            if (isCollapsed) return;
-            setIsResizing(true);
-          }}
+          onMouseDown={() => { if (isCollapsed) return; setIsResizing(true); }}
           style={{ zIndex: 50 }}
         />
       </div>
@@ -366,9 +255,7 @@ function DashboardLayoutContent({
           <div className="flex border-b border-border/50 h-14 items-center justify-between bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-9 w-9 rounded-lg" />
-              <span className="text-sm font-semibold tracking-tight text-foreground">
-                {activeMenuItem?.label ?? "Máquina de Vendas"}
-              </span>
+              <span className="text-sm font-semibold tracking-tight text-foreground">{activeMenuItem?.label ?? "Máquina de Vendas"}</span>
             </div>
           </div>
         )}
