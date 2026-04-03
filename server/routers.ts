@@ -6,6 +6,8 @@ import { invokeLLM, type Message } from "./_core/llm";
 import { z } from "zod";
 import * as db from "./db";
 import { stripeRouter } from "./stripe";
+import { generateToken, comparePassword } from "./auth";
+import { TRPCError } from "@trpc/server";
 
 export const appRouter = router({
   system: systemRouter,
@@ -17,6 +19,39 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+    loginCustom: publicProcedure
+      .input(z.object({ username: z.string().min(1), password: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        const user = await db.getUserByName(input.username);
+        if (!user) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Usuário ou senha inválidos" });
+        }
+        if (!user.passwordHash) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Usuário ou senha inválidos" });
+        }
+        const isPasswordValid = await comparePassword(input.password, user.passwordHash);
+        if (!isPasswordValid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Usuário ou senha inválidos" });
+        }
+        const token = generateToken({
+          userId: user.id,
+          email: user.email || "",
+          companyId: user.companyId || 1,
+          role: user.role,
+          layer: user.layer,
+        });
+        return {
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            layer: user.layer,
+            companyId: user.companyId,
+          },
+        };
+      }),
   }),
 
   // ===== AI =====
