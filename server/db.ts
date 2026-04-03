@@ -60,6 +60,12 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getUserByName(name: string) {
+  const db = await getDb(); if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.name, name)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
 export async function getUsers(companyId?: number) {
   const db = await getDb(); if (!db) return [];
   if (companyId) return db.select().from(users).where(eq(users.companyId, companyId));
