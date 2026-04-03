@@ -20,6 +20,8 @@ import {
   playbooks,
   proposals,
   gamificationScores,
+  callTranscriptions,
+  callAnalyses,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -451,4 +453,40 @@ export async function upsertGamificationScore(companyId: number, userId: number,
   } else {
     await db.insert(gamificationScores).values({ companyId, userId, points: pointsToAdd, level: 1, weeklyPoints: pointsToAdd, monthlyPoints: pointsToAdd });
   }
+}
+
+
+// ===== CALL TRANSCRIPTIONS =====
+export async function getCallTranscriptions(companyId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(callTranscriptions).where(eq(callTranscriptions.companyId, companyId)).orderBy(desc(callTranscriptions.createdAt));
+}
+
+export async function createCallTranscription(data: { companyId: number; userId: number; leadId?: number; dealId?: number; title: string; audioUrl?: string; transcription?: string; duration?: number; recordedAt?: Date }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  const result = await db.insert(callTranscriptions).values(data);
+  return { id: result[0].insertId };
+}
+
+export async function updateCallTranscription(id: number, data: { transcription?: string; status?: "pending" | "transcribed" | "analyzed" | "archived" }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.update(callTranscriptions).set(data).where(eq(callTranscriptions.id, id));
+}
+
+// ===== CALL ANALYSES =====
+export async function getCallAnalyses(companyId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(callAnalyses).where(eq(callAnalyses.companyId, companyId)).orderBy(desc(callAnalyses.createdAt));
+}
+
+export async function createCallAnalysis(data: { transcriptionId: number; companyId: number; sentiment?: string; sentimentScore?: string; keyPoints?: any; strengths?: any; weaknesses?: any; frameworkEvaluation?: any; recommendations?: any; score?: number; analysisText?: string }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  const result = await db.insert(callAnalyses).values(data);
+  return { id: result[0].insertId };
+}
+
+export async function getCallAnalysisByTranscription(transcriptionId: number) {
+  const db = await getDb(); if (!db) return null;
+  const result = await db.select().from(callAnalyses).where(eq(callAnalyses.transcriptionId, transcriptionId)).limit(1);
+  return result[0] || null;
 }

@@ -352,3 +352,54 @@ export const gamificationScores = mysqlTable("gamification_scores", {
 });
 
 export type GamificationScore = typeof gamificationScores.$inferSelect;
+
+
+// ===== CALL TRANSCRIPTIONS (Gestor Comercial de IA) =====
+export const callTranscriptions = mysqlTable("call_transcriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  userId: int("userId").notNull(),
+  leadId: int("leadId"),
+  dealId: int("dealId"),
+  title: varchar("title", { length: 255 }).notNull(),
+  audioUrl: text("audioUrl"),
+  transcription: text("transcription"),
+  duration: int("duration"),
+  recordedAt: timestamp("recordedAt"),
+  status: mysqlEnum("status", ["pending", "transcribed", "analyzed", "archived"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CallTranscription = typeof callTranscriptions.$inferSelect;
+
+// ===== CALL ANALYSES (Análise com IA) =====
+export const callAnalyses = mysqlTable("call_analyses", {
+  id: int("id").autoincrement().primaryKey(),
+  transcriptionId: int("transcriptionId").notNull(),
+  companyId: int("companyId").notNull(),
+  sentiment: varchar("sentiment", { length: 50 }),
+  sentimentScore: decimal("sentimentScore", { precision: 3, scale: 2 }),
+  keyPoints: json("keyPoints"),
+  strengths: json("strengths"),
+  weaknesses: json("weaknesses"),
+  frameworkEvaluation: json("frameworkEvaluation"),
+  recommendations: json("recommendations"),
+  score: int("score"),
+  analysisText: text("analysisText"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CallAnalysis = typeof callAnalyses.$inferSelect;
+
+// ===== FRAMEWORK EVALUATIONS =====
+export const frameworkEvaluations = mysqlTable("framework_evaluations", {
+  id: int("id").autoincrement().primaryKey(),
+  analysisId: int("analysisId").notNull(),
+  framework: varchar("framework", { length: 100 }).notNull(),
+  compliance: int("compliance").default(0),
+  details: json("details"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type FrameworkEvaluation = typeof frameworkEvaluations.$inferSelect;

@@ -315,6 +315,55 @@ Gere 1-3 alertas em JSON: [{"severity":"info|warning|critical","category":"strin
       ];
     }),
   }),
+
+  // ===== CALL ANALYTICS (Gestor Comercial de IA) =====
+  callAnalytics: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const companyId = ctx.user.companyId || 1;
+      return db.getCallTranscriptions(companyId);
+    }),
+    create: protectedProcedure
+      .input(z.object({ title: z.string(), audioUrl: z.string().optional(), transcription: z.string().optional(), duration: z.number().optional(), recordedAt: z.date().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        const companyId = ctx.user.companyId || 1;
+        return db.createCallTranscription({ ...input, companyId, userId: ctx.user.id });
+      }),
+    analyze: protectedProcedure
+      .input(z.object({ transcriptionId: z.number(), transcription: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        const companyId = ctx.user.companyId || 1;
+        const llmMessages: Message[] = [
+          { role: "system", content: "Você é um especialista em vendas e análise de chamadas. Analise a transcrição fornecida e forneça: 1) Sentimento geral (positivo/negativo/neutro), 2) Pontos-chave, 3) Pontos fortes, 4) Pontos fracos, 5) Avaliação de frameworks (SPIN, BANT, MEDDIC), 6) Recomendações de melhoria. Responda em JSON." },
+          { role: "user", content: `Analise esta transcrição de chamada de vendas:\n\n${input.transcription}` },
+        ];
+        const response = await invokeLLM({ messages: llmMessages });
+        const analysisText = typeof response.choices?.[0]?.message?.content === "string" ? response.choices[0].message.content : "";
+        try {
+          const parsed = JSON.parse(analysisText);
+          const result = await db.createCallAnalysis({
+            transcriptionId: input.transcriptionId,
+            companyId,
+            sentiment: parsed.sentiment || "neutral",
+            sentimentScore: parsed.sentimentScore || "0.5",
+            keyPoints: parsed.keyPoints || [],
+            strengths: parsed.strengths || [],
+            weaknesses: parsed.weaknesses || [],
+            frameworkEvaluation: parsed.frameworkEvaluation || {},
+            recommendations: parsed.recommendations || [],
+            score: parsed.score || 50,
+            analysisText,
+          });
+          await db.updateCallTranscription(input.transcriptionId, { status: "analyzed" });
+          return result;
+        } catch (e) {
+          return { id: 0, error: "Failed to parse analysis" };
+        }
+      }),
+    getAnalyses: protectedProcedure.query(async ({ ctx }) => {
+      const companyId = ctx.user.companyId || 1;
+      return db.getCallAnalyses(companyId);
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

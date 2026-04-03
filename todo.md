@@ -108,3 +108,12 @@
 - [ ] Tipografia mais impactante e hierarquia visual clara
 - [ ] Componentes com efeitos de vidro e profundidade
 - [ ] Validação visual com usuário
+
+
+## Gestor Comercial de IA
+- [ ] Schema: tabelas para call_transcriptions, call_analyses, framework_evaluations
+- [ ] Backend: procedures para upload, transcrição, análise com LLM
+- [ ] Frontend: página CallAnalytics com upload e resultados
+- [ ] Agendamento automático 7h-19h
+- [ ] Dashboard de histórico e performance
+- [ ] Testes e validação

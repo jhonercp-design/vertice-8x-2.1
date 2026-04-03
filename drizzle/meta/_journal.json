@@ -29,6 +29,13 @@
       "when": 1775249353787,
       "tag": "0003_open_midnight",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1775250546370,
+      "tag": "0004_sturdy_devos",
+      "breakpoints": true
     }
   ]
 }
