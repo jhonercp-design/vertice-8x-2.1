@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, count, sum, like, or } from "drizzle-orm";
+import { eq, desc, and, sql, count, sum, like, or, gte, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
@@ -489,4 +489,61 @@ export async function getCallAnalysisByTranscription(transcriptionId: number) {
   const db = await getDb(); if (!db) return null;
   const result = await db.select().from(callAnalyses).where(eq(callAnalyses.transcriptionId, transcriptionId)).limit(1);
   return result[0] || null;
+}
+
+
+// ===== AGC ANALYSIS HISTORY =====
+export async function getAgcAlertsHistory(companyId: number, limit: number = 50, offset: number = 0) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(agcAlerts)
+    .where(eq(agcAlerts.companyId, companyId))
+    .orderBy(desc(agcAlerts.createdAt))
+    .limit(limit)
+    .offset(offset);
+}
+
+export async function getAgcAlertsHistoryByDateRange(companyId: number, startDate: Date, endDate: Date) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(agcAlerts)
+    .where(and(
+      eq(agcAlerts.companyId, companyId),
+      gte(agcAlerts.createdAt, startDate),
+      lte(agcAlerts.createdAt, endDate)
+    ))
+    .orderBy(desc(agcAlerts.createdAt));
+}
+
+export async function getAgcAlertsByType(companyId: number, category: string) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(agcAlerts)
+    .where(and(
+      eq(agcAlerts.companyId, companyId),
+      eq(agcAlerts.category, category)
+    ))
+    .orderBy(desc(agcAlerts.createdAt));
+}
+
+export async function getAgcAlertsSummary(companyId: number) {
+  const db = await getDb(); if (!db) return { total: 0, bySeverity: {}, acknowledged: 0 };
+  const alerts = await db.select().from(agcAlerts).where(eq(agcAlerts.companyId, companyId));
+  
+  const bySeverity: Record<string, number> = {};
+  let acknowledged = 0;
+  
+  alerts.forEach(alert => {
+    bySeverity[alert.severity] = (bySeverity[alert.severity] || 0) + 1;
+    if (alert.acknowledged) acknowledged++;
+  });
+  
+  return {
+    total: alerts.length,
+    bySeverity,
+    acknowledged,
+    lastAlertAt: alerts[0]?.createdAt || null,
+  };
+}
+
+export async function updateAgcAlertStatus(alertId: number, acknowledged: boolean, acknowledgedBy?: number) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.update(agcAlerts).set({ acknowledged, acknowledgedBy }).where(eq(agcAlerts.id, alertId));
 }

@@ -63,6 +63,7 @@ const sistemaItems: MenuItem[] = [
   { icon: Crown, label: "Master Admin", path: "/admin", founderOnly: true },
   { icon: LineChart, label: "Análise de Vendas", path: "/sales-analytics", founderOnly: true },
   { icon: BarChart3, label: "Gestor Comercial IA", path: "/call-analytics" },
+  { icon: TrendingUp, label: "Histórico de Análises", path: "/analysis-history" },
   { icon: Settings, label: "Configurações", path: "/settings" },
 ];
 

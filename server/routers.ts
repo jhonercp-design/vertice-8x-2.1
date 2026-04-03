@@ -364,6 +364,39 @@ Gere 1-3 alertas em JSON: [{"severity":"info|warning|critical","category":"strin
       return db.getCallAnalyses(companyId);
     }),
   }),
+
+  // ===== AGC ANALYSIS HISTORY =====
+  analysisHistory: router({
+    getAlerts: protectedProcedure
+      .input(z.object({ limit: z.number().optional(), offset: z.number().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        const companyId = ctx.user.companyId || 1;
+        return db.getAgcAlertsHistory(companyId, input?.limit || 50, input?.offset || 0);
+      }),
+    getAlertsByDateRange: protectedProcedure
+      .input(z.object({ startDate: z.date(), endDate: z.date() }))
+      .query(async ({ ctx, input }) => {
+        const companyId = ctx.user.companyId || 1;
+        return db.getAgcAlertsHistoryByDateRange(companyId, input.startDate, input.endDate);
+      }),
+    getAlertsByCategory: protectedProcedure
+      .input(z.object({ category: z.string() }))
+      .query(async ({ ctx, input }) => {
+        const companyId = ctx.user.companyId || 1;
+        return db.getAgcAlertsByType(companyId, input.category);
+      }),
+    getSummary: protectedProcedure
+      .query(async ({ ctx }) => {
+        const companyId = ctx.user.companyId || 1;
+        return db.getAgcAlertsSummary(companyId);
+      }),
+    updateStatus: protectedProcedure
+      .input(z.object({ alertId: z.number(), acknowledged: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        await db.updateAgcAlertStatus(input.alertId, input.acknowledged, ctx.user.id);
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

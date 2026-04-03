@@ -117,5 +117,7 @@
 - [x] Agendamento automático 7h-19h para análise de pipeline (node-cron integrado)
 - [x] Gerar alertas estratégicos automáticos (via LLM)
 - [x] Integrar alertas ao AGC (createAgcAlert)
-- [ ] Dashboard de histórico de análises
-- [ ] Testes e validação
+- [x] Backend procedures para listar análises com filtros
+- [x] Página AnalysisHistory com gráficos e timeline
+- [x] Integrar ao DashboardLayout
+- [x] Testes e validação
