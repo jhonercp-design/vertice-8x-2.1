@@ -37,7 +37,6 @@ const Methodology = lazy(() => import("./pages/Methodology"));
 const SalesAnalytics = lazy(() => import("./pages/SalesAnalytics"));
 const CallAnalytics = lazy(() => import("./pages/CallAnalytics"));
 const AnalysisHistory = lazy(() => import("./pages/AnalysisHistory"));
-const Login = lazy(() => import("./pages/Login"));
 
 function LazyPage({ children }: { children: React.ReactNode }) {
   return (
@@ -51,7 +50,6 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
-      <Route path="/login">{() => <LazyPage><Login /></LazyPage>}</Route>
       <Route path="/dashboard" component={Dashboard} />
       {/* Estratégia */}
       <Route path="/trail">{() => <LazyPage><Trail /></LazyPage>}</Route>
