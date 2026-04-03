@@ -12,6 +12,7 @@ import {
   LayoutDashboard, LogOut, PanelLeft, Route, Bot, ShieldCheck, Users, Zap, MessageCircle,
   Settings, Crown, Gauge, Target, BarChart3, Package, FolderKanban, BookOpen, FileText,
   Trophy, TrendingUp, Crosshair, Rocket, Calculator, RefreshCw, Handshake, Lightbulb, ChevronDown,
+  LineChart,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -60,6 +61,7 @@ const sistemaItems: MenuItem[] = [
   { icon: Lightbulb, label: "Onboarding", path: "/onboarding" },
   { icon: RefreshCw, label: "Metodologia", path: "/methodology" },
   { icon: Crown, label: "Master Admin", path: "/admin", founderOnly: true },
+  { icon: LineChart, label: "Análise de Vendas", path: "/sales-analytics", founderOnly: true },
   { icon: Settings, label: "Configurações", path: "/settings" },
 ];
 

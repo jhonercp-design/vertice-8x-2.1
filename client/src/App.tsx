@@ -34,6 +34,7 @@ const DemandGen = lazy(() => import("./pages/DemandGen"));
 const PostSales = lazy(() => import("./pages/PostSales"));
 const Gamification = lazy(() => import("./pages/Gamification"));
 const Methodology = lazy(() => import("./pages/Methodology"));
+const SalesAnalytics = lazy(() => import("./pages/SalesAnalytics"));
 
 function LazyPage({ children }: { children: React.ReactNode }) {
   return (
@@ -74,6 +75,7 @@ function Router() {
       <Route path="/onboarding">{() => <LazyPage><Onboarding /></LazyPage>}</Route>
       <Route path="/methodology">{() => <LazyPage><Methodology /></LazyPage>}</Route>
       <Route path="/admin">{() => <LazyPage><Admin /></LazyPage>}</Route>
+      <Route path="/sales-analytics">{() => <LazyPage><SalesAnalytics /></LazyPage>}</Route>
       <Route path="/settings">{() => <LazyPage><Settings /></LazyPage>}</Route>
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />

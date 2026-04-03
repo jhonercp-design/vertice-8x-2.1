@@ -257,6 +257,64 @@ Gere 1-3 alertas em JSON: [{"severity":"info|warning|critical","category":"strin
         .mutation(async ({ input }) => { await db.updateUserLayer(input.userId, input.layer); return { success: true }; }),
     }),
   }),
+
+  // ===== SALES ANALYTICS =====
+  salesAnalytics: router({
+    getMetrics: founderProcedure.query(async () => {
+      const companies = await db.getCompanies();
+      const totalCompanies = companies.length;
+      const activeCompanies = companies.filter((c) => c.status === "active").length;
+      const totalMRR = companies.reduce((sum, c) => {
+        const price = c.plan === "trial" ? 0 : c.plan === "starter" ? 99 : c.plan === "professional" ? 299 : 999;
+        return sum + price;
+      }, 0);
+      const trialCompanies = companies.filter((c) => c.plan === "trial").length;
+      const paidCompanies = companies.filter((c) => c.plan !== "trial").length;
+      const churnRate = totalCompanies > 0 ? ((companies.filter((c) => c.status === "cancelled").length / totalCompanies) * 100).toFixed(2) : "0";
+
+      return {
+        totalCompanies,
+        activeCompanies,
+        totalMRR,
+        trialCompanies,
+        paidCompanies,
+        churnRate: parseFloat(churnRate as string),
+        conversionRate: totalCompanies > 0 ? ((paidCompanies / totalCompanies) * 100).toFixed(2) : "0",
+      };
+    }),
+    getRevenueByPlan: founderProcedure.query(async () => {
+      const companies = await db.getCompanies();
+      const plans = { trial: 0, starter: 0, professional: 0, enterprise: 0 };
+      const prices = { trial: 0, starter: 99, professional: 299, enterprise: 999 };
+
+      companies.forEach((c) => {
+        if (c.status === "active") {
+          plans[c.plan as keyof typeof plans] += prices[c.plan as keyof typeof prices];
+        }
+      });
+
+      return [
+        { name: "Trial", value: plans.trial, count: companies.filter((c) => c.plan === "trial").length },
+        { name: "Starter", value: plans.starter, count: companies.filter((c) => c.plan === "starter").length },
+        { name: "Professional", value: plans.professional, count: companies.filter((c) => c.plan === "professional").length },
+        { name: "Enterprise", value: plans.enterprise, count: companies.filter((c) => c.plan === "enterprise").length },
+      ];
+    }),
+    getCompanyStatus: founderProcedure.query(async () => {
+      const companies = await db.getCompanies();
+      const statuses = { active: 0, suspended: 0, cancelled: 0 };
+
+      companies.forEach((c) => {
+        statuses[c.status as keyof typeof statuses]++;
+      });
+
+      return [
+        { name: "Ativas", value: statuses.active, color: "#10b981" },
+        { name: "Suspensas", value: statuses.suspended, color: "#f59e0b" },
+        { name: "Canceladas", value: statuses.cancelled, color: "#ef4444" },
+      ];
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
