@@ -133,3 +133,7 @@
 - [x] Redirecionar getLoginUrl() para /login em vez de OAuth
 - [x] Testes unitários passando (56 testes)
 - [x] Teste de integração via curl (login + cookie + auth.me)
+
+## UX - Tela de Login como entrada principal
+- [x] Redirecionar rota raiz (/) para /login sempre
+- [x] Garantir que o usuário sempre passe pela tela de login ao acessar a plataforma
