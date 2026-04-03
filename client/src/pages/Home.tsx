@@ -1,6 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { getLoginUrl } from "@/const";
+
 import { motion } from "framer-motion";
 import {
   Gauge,
@@ -84,7 +84,7 @@ export default function Home() {
             </div>
           </div>
           <Button
-            onClick={() => (window.location.href = getLoginUrl())}
+            onClick={() => (window.location.href = "/login")}
             size="sm"
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
@@ -117,7 +117,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 size="lg"
-                onClick={() => (window.location.href = getLoginUrl())}
+                onClick={() => (window.location.href = "/login")}
                 className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg glow-orange text-base px-8"
               >
                 Começar Agora <ChevronRight className="w-5 h-5 ml-1" />

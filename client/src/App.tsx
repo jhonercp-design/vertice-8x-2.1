@@ -9,6 +9,7 @@ import { lazy, Suspense } from "react";
 // Eager load critical pages
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
 
 // Lazy load all other pages
 const Trail = lazy(() => import("./pages/Trail"));
@@ -49,6 +50,7 @@ function LazyPage({ children }: { children: React.ReactNode }) {
 function Router() {
   return (
     <Switch>
+      <Route path="/login" component={Login} />
       <Route path="/" component={Home} />
       <Route path="/dashboard" component={Dashboard} />
       {/* Estratégia */}

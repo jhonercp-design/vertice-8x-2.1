@@ -121,3 +121,15 @@
 - [x] Página AnalysisHistory com gráficos e timeline
 - [x] Integrar ao DashboardLayout
 - [x] Testes e validação
+
+
+## Autenticação por Email (sem senha, sem OAuth)
+- [x] Criar endpoint /api/auth/email-login no Express (fora do tRPC)
+- [x] Criar tela de login customizada (campo email + botão Iniciar Sistema)
+- [x] Middleware de sessão por cookie JWT (reutiliza JWT_SECRET existente)
+- [x] Cadastrar jhonercp@gmail.com como MASTER (admin/direcao - acesso total)
+- [x] Cadastrar jhonevsales@gmail.com como Cliente (user/operacional - acesso operacional)
+- [x] Bloquear qualquer outro método de login (emails não cadastrados são rejeitados)
+- [x] Redirecionar getLoginUrl() para /login em vez de OAuth
+- [x] Testes unitários passando (56 testes)
+- [x] Teste de integração via curl (login + cookie + auth.me)
