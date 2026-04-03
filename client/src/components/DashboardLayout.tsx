@@ -4,8 +4,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton,
-  SidebarMenuItem, SidebarProvider, SidebarTrigger, SidebarGroup, SidebarGroupLabel, SidebarSeparator, useSidebar,
+  Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarProvider, SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
@@ -68,9 +67,9 @@ const allMenuItems = [...estrategiaItems, ...operacionalItems, ...analiticoItems
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const SIDEBAR_GROUPS_KEY = "sidebar-groups";
-const DEFAULT_WIDTH = 260;
-const MIN_WIDTH = 200;
-const MAX_WIDTH = 400;
+const DEFAULT_WIDTH = 280;
+const MIN_WIDTH = 240;
+const MAX_WIDTH = 420;
 
 function canAccess(item: MenuItem, userLayer?: string, isFounder?: boolean): boolean {
   if (item.founderOnly && !isFounder) return false;
@@ -141,46 +140,49 @@ function NavGroup({ label, groupKey, items, location, setLocation, userLayer, is
   if (filtered.length === 0) return null;
 
   return (
-    <SidebarGroup>
+    <div className="space-y-2">
       <button
         onClick={onToggle}
-        className="flex items-center justify-between w-full px-2 py-1 text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold hover:text-sidebar-foreground/60 transition-colors"
+        className="flex items-center justify-between w-full px-3 py-2 text-xs uppercase tracking-widest text-sidebar-foreground/50 font-bold hover:text-sidebar-foreground/80 transition-colors rounded-md hover:bg-sidebar-accent/50"
       >
-        <span>{label}</span>
-        <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-0" : "-rotate-90"}`} />
+        <span className="flex-1 text-left">{label}</span>
+        <ChevronDown className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-0" : "-rotate-90"}`} />
       </button>
       {isExpanded && (
-        <SidebarMenu className="mt-1">
+        <div className="space-y-1">
           {filtered.map((item) => {
             const isActive = location === item.path || (item.path !== "/" && location.startsWith(item.path + "/")) || location.startsWith(item.path);
             return (
-              <SidebarMenuItem key={item.path}>
-                <SidebarMenuButton isActive={isActive} onClick={() => setLocation(item.path)} tooltip={item.label} className="h-9 transition-all font-normal">
-                  <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : "text-sidebar-foreground/60"}`} />
-                  <span className={isActive ? "text-primary font-medium" : ""}>{item.label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <button
+                key={item.path}
+                onClick={() => setLocation(item.path)}
+                title={item.label}
+                className={`flex items-center gap-3 w-full px-3 py-2 rounded-md transition-all text-sm font-medium truncate ${
+                  isActive 
+                    ? "bg-primary/10 text-primary shadow-sm" 
+                    : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
+                }`}
+              >
+                <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-primary" : "text-sidebar-foreground/60"}`} />
+                <span className="truncate">{item.label}</span>
+              </button>
             );
           })}
-        </SidebarMenu>
+        </div>
       )}
-    </SidebarGroup>
+    </div>
   );
 }
 
 function DashboardLayoutContent({ children, setSidebarWidth, expandedGroups, setExpandedGroups }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
-  const { state, toggleSidebar } = useSidebar();
-  const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = allMenuItems.find((item) => location.startsWith(item.path));
   const isMobile = useIsMobile();
   const isFounder = user?.role === "admin";
   const userLayer = (user as any)?.layer || "operacional";
-
-  useEffect(() => { if (isCollapsed) setIsResizing(false); }, [isCollapsed]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -211,43 +213,42 @@ function DashboardLayoutContent({ children, setSidebarWidth, expandedGroups, set
   return (
     <>
       <div className="relative" ref={sidebarRef}>
-        <Sidebar collapsible="icon" className="border-r-0" disableTransition={isResizing}>
-          <SidebarHeader className="h-16 justify-center">
-            <div className="flex items-center gap-3 px-2 transition-all w-full">
-              <button onClick={toggleSidebar} className="h-8 w-8 flex items-center justify-center hover:bg-sidebar-accent rounded-lg transition-colors focus:outline-none shrink-0" aria-label="Toggle navigation">
-                <PanelLeft className="h-4 w-4 text-sidebar-foreground/60" />
-              </button>
-              {!isCollapsed && (
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-bold tracking-tight text-sm text-sidebar-foreground truncate">Máquina de Vendas</span>
-                </div>
-              )}
+        <Sidebar collapsible="none" className="border-r border-border/50 w-[var(--sidebar-width)]">
+          <SidebarHeader className="h-16 border-b border-border/50 flex items-center justify-center px-4">
+            <div className="flex items-center gap-3 w-full">
+              <div className="w-6 h-6 rounded-md bg-primary/15 flex items-center justify-center flex-shrink-0">
+                <Gauge className="h-4 w-4 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-bold tracking-tight text-xs text-sidebar-foreground truncate">Máquina</p>
+                <p className="text-[10px] text-sidebar-foreground/60 truncate">Vértice 8x</p>
+              </div>
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-1 px-2">
+          <SidebarContent className="px-3 py-4 overflow-y-auto">
             <NavGroup label="Estratégia" groupKey="estrategia" items={estrategiaItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} isExpanded={expandedGroups.estrategia} onToggle={() => toggleGroup("estrategia")} />
             <NavGroup label="Operacional" groupKey="operacional" items={operacionalItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} isExpanded={expandedGroups.operacional} onToggle={() => toggleGroup("operacional")} />
             <NavGroup label="Analítico" groupKey="analitico" items={analiticoItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} isExpanded={expandedGroups.analitico} onToggle={() => toggleGroup("analitico")} />
             <NavGroup label="Sistema" groupKey="sistema" items={sistemaItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} isExpanded={expandedGroups.sistema} onToggle={() => toggleGroup("sistema")} />
           </SidebarContent>
 
-          <SidebarFooter className="p-3">
+          <SidebarFooter className="border-t border-border/50 p-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 w-full rounded-lg p-2 hover:bg-sidebar-accent transition-colors text-left">
+                <button className="flex items-center gap-3 w-full rounded-lg p-2 hover:bg-sidebar-accent transition-colors text-left focus:outline-none focus:ring-2 focus:ring-primary/50">
                   <Avatar className="h-8 w-8 border border-sidebar-border shrink-0">
-                    <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
-                      {user?.name?.charAt(0).toUpperCase() || "V"}
+                    <AvatarFallback className="text-xs font-bold bg-primary/15 text-primary">
+                      {user?.name?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium truncate leading-none text-sidebar-foreground">{user?.name || "Usuário"}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate leading-none text-sidebar-foreground">{user?.name || "Usuário"}</p>
                     <p className="text-[11px] text-sidebar-foreground/50 truncate mt-1">{user?.email || ""}</p>
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={() => setLocation("/settings")} className="cursor-pointer">
                   <Settings className="mr-2 h-4 w-4" /><span>Configurações</span>
                 </DropdownMenuItem>
@@ -260,8 +261,8 @@ function DashboardLayoutContent({ children, setSidebarWidth, expandedGroups, set
           </SidebarFooter>
         </Sidebar>
         <div
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
-          onMouseDown={() => { if (isCollapsed) return; setIsResizing(true); }}
+          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/30 transition-colors`}
+          onMouseDown={() => setIsResizing(true)}
           style={{ zIndex: 50 }}
         />
       </div>
@@ -270,12 +271,11 @@ function DashboardLayoutContent({ children, setSidebarWidth, expandedGroups, set
         {isMobile && (
           <div className="flex border-b border-border/50 h-14 items-center justify-between bg-background/95 px-3 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-2">
-              <SidebarTrigger className="h-9 w-9 rounded-lg" />
               <span className="text-sm font-semibold tracking-tight text-foreground">{activeMenuItem?.label ?? "Máquina de Vendas"}</span>
             </div>
           </div>
         )}
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6 bg-background">{children}</main>
       </SidebarInset>
     </>
   );
