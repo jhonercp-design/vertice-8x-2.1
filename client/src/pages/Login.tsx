@@ -16,13 +16,14 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const loginMutation = trpc.auth.loginCustom.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       // Store token in localStorage
       localStorage.setItem("auth_token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
+      setLoading(false);
       setLocation("/dashboard");
     },
-    onError: (err) => {
+    onError: (err: any) => {
       setError(err.message || "Falha ao fazer login");
       setLoading(false);
     },
