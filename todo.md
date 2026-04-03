@@ -93,3 +93,8 @@
 - [x] Testes vitest para todos os routers (43 testes, todos passando)
 - [x] Validação visual no browser
 - [x] Checkpoint e entrega final
+
+## Bugs e Melhorias
+- [x] Diagnosticar sobreposição de itens na sidebar (confirmado: sem overlaps no DOM)
+- [x] Implementar grupos colapsáveis na sidebar (com persistência em localStorage)
+- [x] Corrigir espaçamento entre grupos (melhorado com collapse)

@@ -12,7 +12,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import {
   LayoutDashboard, LogOut, PanelLeft, Route, Bot, ShieldCheck, Users, Zap, MessageCircle,
   Settings, Crown, Gauge, Target, BarChart3, Package, FolderKanban, BookOpen, FileText,
-  Trophy, TrendingUp, Crosshair, Rocket, Calculator, RefreshCw, Handshake, Lightbulb,
+  Trophy, TrendingUp, Crosshair, Rocket, Calculator, RefreshCw, Handshake, Lightbulb, ChevronDown,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -67,13 +67,13 @@ const sistemaItems: MenuItem[] = [
 const allMenuItems = [...estrategiaItems, ...operacionalItems, ...analiticoItems, ...sistemaItems];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
+const SIDEBAR_GROUPS_KEY = "sidebar-groups";
 const DEFAULT_WIDTH = 260;
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 400;
 
 function canAccess(item: MenuItem, userLayer?: string, isFounder?: boolean): boolean {
   if (item.founderOnly && !isFounder) return false;
-  // Layer-based filtering: if item has layers defined, check user layer
   if (item.layers && userLayer && !item.layers.includes(userLayer as any)) return false;
   return true;
 }
@@ -83,11 +83,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem(SIDEBAR_GROUPS_KEY);
+    return saved ? JSON.parse(saved) : { estrategia: true, operacional: true, analitico: true, sistema: true };
+  });
   const { loading, user } = useAuth();
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify(expandedGroups));
+  }, [expandedGroups]);
 
   if (loading) return <DashboardLayoutSkeleton />;
 
@@ -119,41 +127,48 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <SidebarProvider style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}>
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>{children}</DashboardLayoutContent>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} expandedGroups={expandedGroups} setExpandedGroups={setExpandedGroups}>{children}</DashboardLayoutContent>
     </SidebarProvider>
   );
 }
 
-type DashboardLayoutContentProps = { children: React.ReactNode; setSidebarWidth: (width: number) => void };
+type DashboardLayoutContentProps = { children: React.ReactNode; setSidebarWidth: (width: number) => void; expandedGroups: Record<string, boolean>; setExpandedGroups: (groups: Record<string, boolean>) => void };
 
-function NavGroup({ label, items, location, setLocation, userLayer, isFounder }: {
-  label: string; items: MenuItem[]; location: string; setLocation: (path: string) => void; userLayer?: string; isFounder?: boolean;
+function NavGroup({ label, groupKey, items, location, setLocation, userLayer, isFounder, isExpanded, onToggle }: {
+  label: string; groupKey: string; items: MenuItem[]; location: string; setLocation: (path: string) => void; userLayer?: string; isFounder?: boolean; isExpanded: boolean; onToggle: () => void;
 }) {
   const filtered = items.filter((item) => canAccess(item, userLayer, isFounder));
   if (filtered.length === 0) return null;
+
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold">
-        {label}
-      </SidebarGroupLabel>
-      <SidebarMenu>
-        {filtered.map((item) => {
-          const isActive = location === item.path || (item.path !== "/" && location.startsWith(item.path + "/")) || location.startsWith(item.path);
-          return (
-            <SidebarMenuItem key={item.path}>
-              <SidebarMenuButton isActive={isActive} onClick={() => setLocation(item.path)} tooltip={item.label} className="h-9 transition-all font-normal">
-                <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : "text-sidebar-foreground/60"}`} />
-                <span className={isActive ? "text-primary font-medium" : ""}>{item.label}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          );
-        })}
-      </SidebarMenu>
+      <button
+        onClick={onToggle}
+        className="flex items-center justify-between w-full px-2 py-1 text-[10px] uppercase tracking-widest text-sidebar-foreground/40 font-semibold hover:text-sidebar-foreground/60 transition-colors"
+      >
+        <span>{label}</span>
+        <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? "rotate-0" : "-rotate-90"}`} />
+      </button>
+      {isExpanded && (
+        <SidebarMenu className="mt-1">
+          {filtered.map((item) => {
+            const isActive = location === item.path || (item.path !== "/" && location.startsWith(item.path + "/")) || location.startsWith(item.path);
+            return (
+              <SidebarMenuItem key={item.path}>
+                <SidebarMenuButton isActive={isActive} onClick={() => setLocation(item.path)} tooltip={item.label} className="h-9 transition-all font-normal">
+                  <item.icon className={`h-4 w-4 ${isActive ? "text-primary" : "text-sidebar-foreground/60"}`} />
+                  <span className={isActive ? "text-primary font-medium" : ""}>{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
+      )}
     </SidebarGroup>
   );
 }
 
-function DashboardLayoutContent({ children, setSidebarWidth }: DashboardLayoutContentProps) {
+function DashboardLayoutContent({ children, setSidebarWidth, expandedGroups, setExpandedGroups }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
@@ -189,6 +204,10 @@ function DashboardLayoutContent({ children, setSidebarWidth }: DashboardLayoutCo
     };
   }, [isResizing, setSidebarWidth]);
 
+  const toggleGroup = (groupKey: string) => {
+    setExpandedGroups({ ...expandedGroups, [groupKey]: !expandedGroups[groupKey] });
+  };
+
   return (
     <>
       <div className="relative" ref={sidebarRef}>
@@ -206,14 +225,11 @@ function DashboardLayoutContent({ children, setSidebarWidth }: DashboardLayoutCo
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0 px-2">
-            <NavGroup label="Estratégia" items={estrategiaItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} />
-            <SidebarSeparator className="my-3 opacity-30" />
-            <NavGroup label="Operacional" items={operacionalItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} />
-            <SidebarSeparator className="my-3 opacity-30" />
-            <NavGroup label="Analítico" items={analiticoItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} />
-            <SidebarSeparator className="my-3 opacity-30" />
-            <NavGroup label="Sistema" items={sistemaItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} />
+          <SidebarContent className="gap-1 px-2">
+            <NavGroup label="Estratégia" groupKey="estrategia" items={estrategiaItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} isExpanded={expandedGroups.estrategia} onToggle={() => toggleGroup("estrategia")} />
+            <NavGroup label="Operacional" groupKey="operacional" items={operacionalItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} isExpanded={expandedGroups.operacional} onToggle={() => toggleGroup("operacional")} />
+            <NavGroup label="Analítico" groupKey="analitico" items={analiticoItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} isExpanded={expandedGroups.analitico} onToggle={() => toggleGroup("analitico")} />
+            <NavGroup label="Sistema" groupKey="sistema" items={sistemaItems} location={location} setLocation={setLocation} userLayer={userLayer} isFounder={isFounder} isExpanded={expandedGroups.sistema} onToggle={() => toggleGroup("sistema")} />
           </SidebarContent>
 
           <SidebarFooter className="p-3">
