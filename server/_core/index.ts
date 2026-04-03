@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { initializeAllSchedulers, stopAllSchedulers } from "./scheduler";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -28,6 +29,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Initialize schedulers for automated pipeline analysis
+  await initializeAllSchedulers();
+
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
@@ -59,6 +63,19 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+  });
+
+  // Graceful shutdown
+  process.on("SIGTERM", () => {
+    console.log("SIGTERM received, stopping schedulers...");
+    stopAllSchedulers();
+    process.exit(0);
+  });
+
+  process.on("SIGINT", () => {
+    console.log("SIGINT received, stopping schedulers...");
+    stopAllSchedulers();
+    process.exit(0);
   });
 }
 

@@ -111,9 +111,11 @@
 
 
 ## Gestor Comercial de IA
-- [ ] Schema: tabelas para call_transcriptions, call_analyses, framework_evaluations
-- [ ] Backend: procedures para upload, transcrição, análise com LLM
-- [ ] Frontend: página CallAnalytics com upload e resultados
-- [ ] Agendamento automático 7h-19h
-- [ ] Dashboard de histórico e performance
+- [x] Schema: tabelas para call_transcriptions, call_analyses
+- [x] Backend: procedures para análise com LLM
+- [x] Frontend: página CallAnalytics com upload e resultados
+- [x] Agendamento automático 7h-19h para análise de pipeline (node-cron integrado)
+- [x] Gerar alertas estratégicos automáticos (via LLM)
+- [x] Integrar alertas ao AGC (createAgcAlert)
+- [ ] Dashboard de histórico de análises
 - [ ] Testes e validação
