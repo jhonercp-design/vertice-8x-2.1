@@ -11,6 +11,7 @@ export const users = mysqlTable("users", {
   layer: mysqlEnum("layer", ["direcao", "gerente", "operacional"]).default("operacional").notNull(),
   companyId: int("companyId"),
   avatarUrl: text("avatarUrl"),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -37,6 +38,8 @@ export const companies = mysqlTable("companies", {
   projectedRoi: decimal("projectedRoi", { precision: 12, scale: 2 }),
   onboardingData: json("onboardingData"),
   onboardingCompleted: boolean("onboardingCompleted").default(false),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
