@@ -1,6 +1,7 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion } from "framer-motion";
 import { TrendingUp, Users, DollarSign, Target, BarChart3, PieChart } from "lucide-react";
 
 export default function Reports() {
@@ -20,75 +21,126 @@ export default function Reports() {
     return acc;
   }, {});
 
+  const metrics = [
+    { label: "Total Leads", value: totalLeads, icon: Users, color: "from-blue-500 to-blue-600" },
+    { label: "Receita Total", value: `R$ ${totalRevenue.toLocaleString("pt-BR")}`, icon: DollarSign, color: "from-green-500 to-green-600" },
+    { label: "Deals Ganhos", value: wonDeals, icon: Target, color: "from-purple-500 to-purple-600" },
+    { label: "Taxa de Conversão", value: `${conversionRate}%`, icon: TrendingUp, color: "from-orange-500 to-orange-600" },
+  ];
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div><h1 className="text-2xl font-bold tracking-tight">Relatórios</h1><p className="text-muted-foreground">Visão analítica completa da operação comercial</p></div>
+      <div className="space-y-8">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Relatórios</h1>
+            <p className="text-muted-foreground mt-2">Visão analítica completa da operação comercial.</p>
+          </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Users className="h-4 w-4 text-primary" />Total Leads</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{totalLeads}</div></CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4 text-green-500" />Receita Total</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">R$ {totalRevenue.toLocaleString("pt-BR")}</div></CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4 text-blue-500" />Deals Ganhos</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{wonDeals}</div></CardContent></Card>
-          <Card><CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4 text-orange-500" />Conversão</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{conversionRate}%</div></CardContent></Card>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-primary" />Pipeline por Estágio</CardTitle></CardHeader>
-            <CardContent>
-              {pipeline.length === 0 ? <p className="text-muted-foreground text-center py-8">Sem dados de pipeline</p> : (
-                <div className="space-y-3">
-                  {pipeline.map((s: any) => {
-                    const labels: Record<string, string> = { prospecting: "Prospecção", qualification: "Qualificação", proposal: "Proposta", negotiation: "Negociação", closing: "Fechamento", won: "Ganho", lost: "Perdido" };
-                    const maxVal = Math.max(...pipeline.map((p: any) => Number(p.value || 0)), 1);
-                    return (
-                      <div key={s.stage}>
-                        <div className="flex justify-between text-sm mb-1"><span>{labels[s.stage] || s.stage}</span><span className="font-medium">R$ {Number(s.value || 0).toLocaleString("pt-BR")} ({s.count})</span></div>
-                        <div className="w-full bg-muted rounded-full h-2"><div className="h-2 rounded-full bg-primary" style={{ width: `${(Number(s.value || 0) / maxVal) * 100}%` }} /></div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><PieChart className="h-5 w-5 text-primary" />Leads por Status</CardTitle></CardHeader>
-            <CardContent>
-              {leadsByStatus.length === 0 ? <p className="text-muted-foreground text-center py-8">Sem dados de leads</p> : (
-                <div className="space-y-3">
-                  {leadsByStatus.map((s: any) => {
-                    const labels: Record<string, string> = { new: "Novo", contacted: "Contatado", qualified: "Qualificado", proposal: "Proposta", negotiation: "Negociação", won: "Ganho", lost: "Perdido" };
-                    const colors: Record<string, string> = { new: "bg-blue-500", contacted: "bg-cyan-500", qualified: "bg-green-500", proposal: "bg-yellow-500", negotiation: "bg-orange-500", won: "bg-emerald-500", lost: "bg-red-500" };
-                    return (
-                      <div key={s.status} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
-                        <div className="flex items-center gap-2"><div className={`w-3 h-3 rounded-full ${colors[s.status] || "bg-muted"}`} /><span className="text-sm">{labels[s.status] || s.status}</span></div>
-                        <span className="font-semibold text-sm">{s.count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader><CardTitle>Leads por Fonte</CardTitle></CardHeader>
-          <CardContent>
-            {Object.keys(sourceDistribution).length === 0 ? <p className="text-muted-foreground text-center py-8">Cadastre leads com fonte para ver a distribuição</p> : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.entries(sourceDistribution).map(([source, count]) => (
-                  <div key={source} className="p-4 rounded-xl bg-muted/50 text-center">
-                    <p className="text-2xl font-bold">{count as number}</p>
-                    <p className="text-sm text-muted-foreground capitalize">{source}</p>
+        {/* Key Metrics */}
+        <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {metrics.map((metric, idx) => (
+            <motion.div key={idx} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: idx * 0.1 }}>
+              <div className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-card/80 to-card/40 p-6 backdrop-blur-sm transition-all duration-300 hover:border-primary/50 hover:shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-medium">{metric.label}</p>
+                    <p className="text-2xl font-bold mt-1">{metric.value}</p>
                   </div>
-                ))}
+                  <div className={`p-3 rounded-lg bg-gradient-to-br ${metric.color} opacity-10`}>
+                    <metric.icon className="w-5 h-5 text-primary" />
+                  </div>
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Charts Grid */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.2 }} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Pipeline */}
+          <div className="rounded-xl border border-border/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm overflow-hidden">
+            <div className="p-6 border-b border-border/30 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-bold">Pipeline por Estágio</h2>
+            </div>
+            <div className="p-6">
+              {pipeline.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">Sem dados de pipeline</p>
+              ) : (
+                <div className="space-y-3">
+                  {pipeline.map((stage: any, idx: number) => {
+                    const total = pipeline.reduce((sum: number, s: any) => sum + Number(s.value || 0), 0);
+                    const percentage = total > 0 ? (Number(stage.value) / total) * 100 : 0;
+                    return (
+                      <motion.div key={idx} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-medium capitalize">{stage.stage}</p>
+                          <p className="text-sm font-semibold">R$ {Number(stage.value).toLocaleString("pt-BR")}</p>
+                        </div>
+                        <div className="w-full bg-border/30 rounded-full h-2">
+                          <div className="h-full rounded-full bg-gradient-to-r from-primary to-orange-500" style={{ width: `${percentage}%` }} />
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Source Distribution */}
+          <div className="rounded-xl border border-border/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm overflow-hidden">
+            <div className="p-6 border-b border-border/30 flex items-center gap-2">
+              <PieChart className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-bold">Distribuição de Origem</h2>
+            </div>
+            <div className="p-6">
+              {Object.entries(sourceDistribution).length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">Sem dados de origem</p>
+              ) : (
+                <div className="space-y-3">
+                  {Object.entries(sourceDistribution).map(([source, count], idx: number) => {
+                    const total = Object.values(sourceDistribution).reduce((a: any, b: any) => a + b, 0);
+                    const percentage = total > 0 ? ((count as number) / total) * 100 : 0;
+                    return (
+                      <motion.div key={idx} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-sm font-medium">{source}</p>
+                          <p className="text-sm font-semibold">{count} leads</p>
+                        </div>
+                        <div className="w-full bg-border/30 rounded-full h-2">
+                          <div className="h-full rounded-full bg-gradient-to-r from-primary to-orange-500" style={{ width: `${percentage}%` }} />
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Leads by Status */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.3 }}>
+          <div className="rounded-xl border border-border/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm overflow-hidden">
+            <div className="p-6 border-b border-border/30">
+              <h2 className="text-lg font-bold">Leads por Status</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-6">
+              {leadsByStatus.map((status: any, idx: number) => (
+                <motion.div key={idx} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}>
+                  <div className="rounded-lg border border-border/30 bg-card/50 p-4 text-center">
+                    <p className="text-sm text-muted-foreground mb-1 capitalize">{status.status}</p>
+                    <p className="text-2xl font-bold">{status.count}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
       </div>
     </DashboardLayout>
   );

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { motion } from "framer-motion";
 import {
-  ShieldCheck, AlertTriangle, CheckCircle2, Info, Clock, Eye, Loader2, Zap,
+  ShieldCheck, AlertTriangle, CheckCircle2, Info, Clock, Eye, Loader2, Zap, TrendingDown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,107 +41,103 @@ export default function AGC() {
   const resolvedCount = alerts.filter((a: any) => a.acknowledged).length;
 
   const metrics = [
-    { label: "Total Alertas", value: String(alerts.length), icon: AlertTriangle, color: "text-brand-warning" },
-    { label: "Críticos", value: String(criticalCount), icon: ShieldCheck, color: "text-brand-danger" },
-    { label: "Resolvidos", value: String(resolvedCount), icon: CheckCircle2, color: "text-brand-success" },
-    { label: "Atenção", value: String(warningCount), icon: Clock, color: "text-primary" },
+    { label: "Total Alertas", value: String(alerts.length), icon: AlertTriangle, color: "from-orange-500 to-orange-600" },
+    { label: "Críticos", value: String(criticalCount), icon: ShieldCheck, color: "from-red-500 to-red-600" },
+    { label: "Resolvidos", value: String(resolvedCount), icon: CheckCircle2, color: "from-green-500 to-green-600" },
+    { label: "Atenção", value: String(warningCount), icon: Clock, color: "from-yellow-500 to-yellow-600" },
   ];
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-primary" />
-            </div>
+      <div className="space-y-8">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-lg font-bold tracking-tight">Agente de Governança Comercial</h1>
-              <p className="text-xs text-muted-foreground">Auditoria contínua da operação — 7h às 19h</p>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight">AGC</h1>
+              <p className="text-muted-foreground mt-2">Agente de Governança Comercial — auditoria contínua da operação (7h-19h).</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending} className="px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl bg-gradient-to-r from-primary to-orange-500 text-white hover:scale-105 flex items-center gap-2 w-fit">
+                {generateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                Gerar Auditoria IA
+              </button>
+              <Badge className="bg-green-500/10 text-green-500 border-green-500/20 border gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                Ativo
+              </Badge>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending} className="bg-primary text-primary-foreground">
-              {generateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Zap className="w-4 h-4 mr-1" />}
-              Gerar Auditoria IA
-            </Button>
-            <Badge variant="outline" className="border-brand-success/30 text-brand-success gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-success live-indicator" />
-              AGC Ativo
-            </Badge>
-          </div>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {metrics.map((m, i) => (
-            <motion.div key={m.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card className="border-border/30 bg-card/80">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-muted/50 flex items-center justify-center">
-                    <m.icon className={`w-4 h-4 ${m.color}`} />
-                  </div>
+        {/* Metrics */}
+        <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {metrics.map((metric, idx) => (
+            <motion.div key={metric.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: idx * 0.1 }}>
+              <div className="group relative overflow-hidden rounded-xl border border-border/30 bg-gradient-to-br from-card/80 to-card/40 p-6 backdrop-blur-sm transition-all duration-300 hover:border-primary/50 hover:shadow-lg">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-lg font-bold">{m.value}</p>
-                    <p className="text-[11px] text-muted-foreground">{m.label}</p>
+                    <p className="text-sm text-muted-foreground font-medium">{metric.label}</p>
+                    <p className="text-2xl md:text-3xl font-bold mt-1">{metric.value}</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className={`p-3 rounded-lg bg-gradient-to-br ${metric.color} opacity-10`}>
+                    <metric.icon className="w-5 h-5 text-primary" />
+                  </div>
+                </div>
+              </div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
 
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">Alertas</h2>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-          ) : alerts.length === 0 ? (
-            <div className="text-center py-10">
-              <ShieldCheck className="w-10 h-10 text-brand-success mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">Nenhum alerta. Clique em "Gerar Auditoria IA" para analisar sua operação.</p>
+        {/* Alerts */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.2 }}>
+          <div className="rounded-xl border border-border/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm overflow-hidden">
+            <div className="p-6 border-b border-border/30">
+              <h2 className="text-xl font-bold">Alertas de Governança</h2>
+              <p className="text-sm text-muted-foreground mt-1">Recomendações de IA para otimização operacional</p>
             </div>
-          ) : (
-            alerts.map((alert: any, i: number) => {
-              const config = getSeverityConfig(alert.severity);
-              return (
-                <motion.div key={alert.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}>
-                  <Card className={`${config.border} ${config.bg} overflow-hidden`}>
-                    <CardContent className="p-5">
-                      <div className="flex flex-col md:flex-row md:items-start gap-4">
+
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : alerts.length === 0 ? (
+              <div className="p-12 text-center">
+                <CheckCircle2 className="w-12 h-12 text-brand-success mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground">Nenhum alerta no momento. Operação em dia!</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border/30">
+                {alerts.map((alert: any, idx: number) => {
+                  const config = getSeverityConfig(alert.severity);
+                  return (
+                    <motion.div key={alert.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }} className={`p-4 hover:bg-card/50 transition-colors group ${alert.acknowledged ? "opacity-60" : ""}`}>
+                      <div className="flex items-start gap-4">
+                        <div className={`p-2 rounded-lg ${config.bg} flex-shrink-0`}>
+                          <config.icon className={`w-5 h-5 ${config.text}`} />
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <Badge className={`${config.badgeBg} ${config.text} border-0 text-[10px]`}>
-                              <config.icon className="w-3 h-3 mr-1" />{config.label}
-                            </Badge>
-                            {alert.category && <Badge variant="outline" className="text-[10px] text-muted-foreground border-border/40">{alert.category}</Badge>}
-                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                              <Clock className="w-3 h-3" /> {new Date(alert.createdAt).toLocaleString("pt-BR")}
-                            </span>
-                            {alert.acknowledged && (
-                              <Badge className="bg-brand-success/15 text-brand-success border-0 text-[10px]"><CheckCircle2 className="w-3 h-3 mr-1" /> Reconhecido</Badge>
-                            )}
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-sm text-foreground">{alert.title}</h3>
+                            <Badge className={`${config.badgeBg} ${config.text} border-0 text-[10px]`}>{config.label}</Badge>
+                            {alert.acknowledged && <Badge className="bg-green-500/10 text-green-500 border-0 text-[10px]">Reconhecido</Badge>}
                           </div>
-                          <h3 className="font-semibold text-sm text-foreground mb-1">{alert.title}</h3>
-                          {alert.description && <p className="text-xs text-muted-foreground leading-relaxed mb-3">{alert.description}</p>}
-                          {alert.recommendation && (
-                            <div className="p-3 rounded-lg bg-background/50 border border-border/20">
-                              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Recomendação do AGC</p>
-                              <p className="text-xs text-foreground leading-relaxed">{alert.recommendation}</p>
-                            </div>
-                          )}
+                          <p className="text-xs text-muted-foreground mb-2">{alert.description}</p>
+                          <p className="text-[10px] text-muted-foreground">{new Date(alert.createdAt).toLocaleString("pt-BR")}</p>
                         </div>
                         {!alert.acknowledged && (
-                          <Button size="sm" variant="outline" className="h-8 text-xs border-primary/30 text-primary hover:bg-primary/10 shrink-0" onClick={() => acknowledgeMutation.mutate({ id: alert.id })} disabled={acknowledgeMutation.isPending}>
-                            Reconhecer
-                          </Button>
+                          <button onClick={() => acknowledgeMutation.mutate({ id: alert.id })} disabled={acknowledgeMutation.isPending} className="px-3 py-1 rounded-lg text-xs font-medium transition-all duration-300 bg-primary/10 text-primary hover:bg-primary/20 flex-shrink-0">
+                            {acknowledgeMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Reconhecer"}
+                          </button>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })
-          )}
-        </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </motion.div>
       </div>
     </DashboardLayout>
   );

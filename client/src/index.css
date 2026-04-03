@@ -229,6 +229,23 @@
     background: var(--card);
     backdrop-filter: blur(12px);
     border: 1px solid var(--border);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 30px oklch(0.72 0.19 55 / 10%);
+  }
+
+  /* Premium button */
+  .btn-premium {
+    @apply px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl;
+    background: linear-gradient(135deg, oklch(0.72 0.19 55), oklch(0.65 0.18 45));
+    color: oklch(0.98 0 0);
+  }
+
+  .btn-premium:hover {
+    @apply scale-105;
   }
 
   /* Glow effect for primary elements */
@@ -244,6 +261,7 @@
     border: 1px solid var(--metric-card-border);
     border-radius: 0.75rem;
     overflow: hidden;
+    transition: all 0.3s ease;
   }
   .metric-card::before {
     content: "";
@@ -253,6 +271,19 @@
     right: 0;
     height: 2px;
     background: linear-gradient(90deg, var(--metric-card-gradient), transparent);
+  }
+
+  .metric-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 0 20px oklch(0.72 0.19 55 / 10%);
+  }
+
+  /* Premium badge */
+  .badge-premium {
+    @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold;
+    background: oklch(0.72 0.19 55 / 10%);
+    color: oklch(0.72 0.19 55);
+    border: 1px solid oklch(0.72 0.19 55 / 20%);
   }
 
   /* Cockpit gauge animation */
@@ -267,6 +298,19 @@
   }
   .live-indicator {
     animation: live-pulse 2s ease-in-out infinite;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, oklch(0.72 0.19 55), oklch(0.65 0.18 45));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Smooth transitions */
+  .smooth-transition {
+    @apply transition-all duration-300 ease-out;
   }
 
   /* Scrollbar styling */

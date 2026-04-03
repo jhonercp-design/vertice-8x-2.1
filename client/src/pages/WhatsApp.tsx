@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trpc } from "@/lib/trpc";
+import { motion } from "framer-motion";
 import {
-  MessageCircle, QrCode, Wifi, WifiOff, Send, Search, Loader2,
+  MessageCircle, QrCode, Wifi, WifiOff, Send, Search, Loader2, Users,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -59,115 +60,111 @@ export default function WhatsApp() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 text-green-400" />
-            </div>
+      <div className="space-y-6 h-[calc(100vh-6rem)] flex flex-col">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-lg font-bold tracking-tight">WhatsApp Multi-Atendente</h1>
-              <p className="text-xs text-muted-foreground">Chat em tempo real com sincronização no CRM</p>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight">WhatsApp Multi-Atendente</h1>
+              <p className="text-muted-foreground mt-2">Chat em tempo real com sincronização no CRM.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={handleConnect} className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center gap-2 ${isConnected ? "bg-green-500/10 text-green-500 border border-green-500/20" : "bg-primary/10 text-primary border border-primary/20"}`}>
+                {isConnected ? <Wifi className="w-4 h-4" /> : <QrCode className="w-4 h-4" />}
+                {isConnected ? "Conectado" : "Conectar"}
+              </button>
+              <Badge className={`${isConnected ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20"} border gap-1.5`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
+                {isConnected ? "Ativo" : "Inativo"}
+              </Badge>
             </div>
           </div>
-          <Badge variant="outline" className={`gap-1.5 ${isConnected ? "border-green-500/30 text-green-400" : "border-brand-danger/30 text-brand-danger"}`}>
-            {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-            {isConnected ? "Conectado" : "Desconectado"}
-          </Badge>
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-14rem)]">
-          {/* Contacts from Leads */}
-          <Card className="border-border/30 bg-card/80 md:col-span-1 flex flex-col">
-            <CardHeader className="pb-2 px-3 pt-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input placeholder="Buscar contato..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-xs bg-background/50 border-border/30" />
+        {/* Chat Container */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }} className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 min-h-0">
+          {/* Contacts */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, delay: 0.1 }} className="flex flex-col">
+            <div className="rounded-xl border border-border/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm overflow-hidden flex flex-col h-full">
+              <div className="p-4 border-b border-border/30">
+                <h2 className="font-semibold mb-3">Contatos</h2>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-input border-border/50" />
+                </div>
               </div>
-            </CardHeader>
-            <CardContent className="p-0 flex-1 overflow-hidden">
-              <ScrollArea className="h-full">
-                {leadsLoading ? (
-                  <div className="flex items-center justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-                ) : contacts.length === 0 ? (
-                  <div className="text-center py-10 px-3"><p className="text-xs text-muted-foreground">Nenhum lead com telefone cadastrado. Adicione leads no CRM.</p></div>
-                ) : (
-                  contacts.map((contact: any) => (
-                    <button key={contact.id} onClick={() => setSelectedLeadId(contact.id)} className={`w-full text-left px-3 py-3 border-b border-border/20 hover:bg-muted/30 transition-colors ${selectedLeadId === contact.id ? "bg-muted/50" : ""}`}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-bold text-green-400">{contact.name.charAt(0)}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-foreground truncate">{contact.name}</span>
-                          </div>
-                          <span className="text-[11px] text-muted-foreground truncate">{contact.phone}</span>
-                        </div>
-                      </div>
-                    </button>
-                  ))
-                )}
+              <ScrollArea className="flex-1">
+                <div className="p-2 space-y-1">
+                  {leadsLoading ? (
+                    <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                  ) : contacts.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Users className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+                      <p className="text-xs text-muted-foreground">Nenhum contato</p>
+                    </div>
+                  ) : (
+                    contacts.map((lead: any) => (
+                      <motion.button key={lead.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} onClick={() => setSelectedLeadId(lead.id)} className={`w-full text-left p-3 rounded-lg transition-all duration-300 ${selectedLeadId === lead.id ? "bg-primary/10 border border-primary/30" : "hover:bg-card/50"}`}>
+                        <p className="text-sm font-medium truncate">{lead.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{lead.phone}</p>
+                      </motion.button>
+                    ))
+                  )}
+                </div>
               </ScrollArea>
-            </CardContent>
-          </Card>
+            </div>
+          </motion.div>
 
-          {/* Chat Window */}
-          <Card className="border-border/30 bg-card/80 md:col-span-2 flex flex-col">
-            {!isConnected ? (
-              <CardContent className="flex-1 flex flex-col items-center justify-center gap-6 p-8">
-                <div className="w-48 h-48 rounded-xl border-2 border-dashed border-border/40 flex items-center justify-center bg-muted/20">
-                  <QrCode className="w-24 h-24 text-muted-foreground/30" />
+          {/* Chat */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.2 }} className="md:col-span-2 flex flex-col">
+            {selectedLead ? (
+              <div className="rounded-xl border border-border/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm overflow-hidden flex flex-col h-full">
+                {/* Chat Header */}
+                <div className="p-4 border-b border-border/30">
+                  <h3 className="font-semibold">{selectedLead.name}</h3>
+                  <p className="text-xs text-muted-foreground">{selectedLead.phone}</p>
                 </div>
-                <div className="text-center">
-                  <h3 className="font-semibold text-sm mb-1">Conecte seu WhatsApp</h3>
-                  <p className="text-xs text-muted-foreground max-w-sm">Clique para ativar o modo de chat. Integração real com Evolution API disponível em breve.</p>
-                </div>
-                <Button size="sm" className="bg-green-600 text-white hover:bg-green-700" onClick={handleConnect}>
-                  <QrCode className="w-4 h-4 mr-1" /> Conectar (Modo Chat)
-                </Button>
-              </CardContent>
-            ) : !selectedLeadId ? (
-              <CardContent className="flex-1 flex items-center justify-center">
-                <p className="text-sm text-muted-foreground">Selecione um contato para iniciar a conversa.</p>
-              </CardContent>
-            ) : (
-              <>
-                <div className="p-3 border-b border-border/30 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <span className="text-xs font-bold text-green-400">{selectedLead?.name?.charAt(0)}</span>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold">{selectedLead?.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{selectedLead?.phone}</p>
-                  </div>
-                </div>
-                <div className="flex-1 overflow-auto p-4" ref={scrollRef}>
-                  <div className="space-y-3">
+
+                {/* Messages */}
+                <ScrollArea className="flex-1" ref={scrollRef}>
+                  <div className="p-4 space-y-3">
                     {messages.length === 0 ? (
-                      <div className="text-center py-10"><p className="text-xs text-muted-foreground">Nenhuma mensagem ainda. Envie a primeira!</p></div>
+                      <div className="text-center py-8">
+                        <MessageCircle className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+                        <p className="text-xs text-muted-foreground">Nenhuma mensagem</p>
+                      </div>
                     ) : (
-                      messages.map((msg: any) => (
-                        <div key={msg.id} className={`flex ${msg.direction === "outbound" ? "justify-end" : "justify-start"}`}>
-                          <div className={`rounded-lg px-3 py-2 max-w-[70%] ${msg.direction === "outbound" ? "bg-green-600/20 text-foreground" : "bg-muted/50 text-foreground"}`}>
-                            <p className="text-xs">{msg.content}</p>
-                            <p className="text-[10px] text-muted-foreground mt-1 text-right">{new Date(msg.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>
+                      messages.map((msg: any, idx: number) => (
+                        <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.direction === "out" ? "justify-end" : "justify-start"}`}>
+                          <div className={`max-w-xs px-3 py-2 rounded-lg text-sm ${msg.direction === "out" ? "bg-primary/10 text-foreground border border-primary/20" : "bg-card/50 text-foreground border border-border/30"}`}>
+                            <p>{msg.content}</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">{new Date(msg.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>
                           </div>
-                        </div>
+                        </motion.div>
                       ))
                     )}
                   </div>
-                </div>
-                <div className="p-3 border-t border-border/30 flex gap-2">
-                  <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Digite uma mensagem..." className="min-h-[38px] h-[38px] resize-none bg-background/50 border-border/30" onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }} />
-                  <Button size="icon" className="h-[38px] w-[38px] bg-green-600 text-white shrink-0" onClick={handleSend} disabled={sendMutation.isPending}>
-                    {sendMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </ScrollArea>
+
+                {/* Input */}
+                <div className="p-4 border-t border-border/30 space-y-2">
+                  <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Digite sua mensagem..." className="min-h-[60px] bg-input border-border/50 resize-none" />
+                  <Button onClick={handleSend} disabled={sendMutation.isPending || !message.trim()} className="w-full bg-gradient-to-r from-primary to-orange-500 hover:scale-105">
+                    {sendMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Send className="w-4 h-4 mr-1" />}
+                    Enviar
                   </Button>
                 </div>
-              </>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-border/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm flex items-center justify-center h-full">
+                <div className="text-center">
+                  <MessageCircle className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                  <p className="text-muted-foreground">Selecione um contato para começar</p>
+                </div>
+              </div>
             )}
-          </Card>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </DashboardLayout>
   );

@@ -2,14 +2,15 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
 import { Trophy, Medal, Star, Flame, Target, Award } from "lucide-react";
 
 const ranks = [
-  { min: 0, label: "Bronze", color: "text-orange-700", bg: "bg-orange-500/20" },
-  { min: 100, label: "Prata", color: "text-gray-400", bg: "bg-gray-500/20" },
-  { min: 300, label: "Ouro", color: "text-yellow-500", bg: "bg-yellow-500/20" },
-  { min: 600, label: "Platina", color: "text-cyan-400", bg: "bg-cyan-500/20" },
-  { min: 1000, label: "Diamante", color: "text-purple-400", bg: "bg-purple-500/20" },
+  { min: 0, label: "Bronze", gradient: "from-orange-600 to-orange-700" },
+  { min: 100, label: "Prata", gradient: "from-gray-400 to-gray-500" },
+  { min: 300, label: "Ouro", gradient: "from-yellow-500 to-yellow-600" },
+  { min: 600, label: "Platina", gradient: "from-cyan-400 to-cyan-500" },
+  { min: 1000, label: "Diamante", gradient: "from-purple-400 to-purple-500" },
 ];
 
 function getRank(points: number) {
@@ -28,88 +29,95 @@ const achievements = [
 export default function Gamification() {
   const { data: scores = [] } = trpc.gamification.scores.useQuery();
   const { data: leads = [] } = trpc.leads.list.useQuery({});
-  const { data: deals = [] } = trpc.deals.list.useQuery();
 
-  // Calculate auto-achievements
-  const unlockedAchievements = new Set<string>();
-  if (leads.length >= 1) unlockedAchievements.add("Primeiro Lead");
-  if (leads.length >= 10) unlockedAchievements.add("10 Leads");
-  if (deals.length >= 1) unlockedAchievements.add("Primeiro Deal");
-  if (deals.some((d: any) => d.stage === "won")) unlockedAchievements.add("Primeira Venda");
-
-  const autoPoints = achievements.filter((a) => unlockedAchievements.has(a.label)).reduce((acc, a) => acc + a.points, 0);
-  const dbPoints = scores.reduce((acc: number, s: any) => acc + Number(s.totalPoints || 0), 0);
-  const totalPoints = autoPoints + dbPoints;
-  const rank = getRank(totalPoints);
-  const nextRank = ranks.find((r) => r.min > totalPoints);
+  const totalPoints = scores.reduce((sum: number, s: any) => sum + Number(s.points || 0), 0);
+  const userRank = getRank(totalPoints);
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        <div><h1 className="text-2xl font-bold tracking-tight">Gamificação</h1><p className="text-muted-foreground">Conquistas, ranking e pontuação da equipe</p></div>
+      <div className="space-y-8">
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <div>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Gamificação</h1>
+            <p className="text-muted-foreground mt-2">Conquistas, pontos e ranking da equipe.</p>
+          </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="md:col-span-1">
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <div className={`p-4 rounded-full ${rank.bg} mb-4`}><Trophy className={`h-10 w-10 ${rank.color}`} /></div>
-              <p className={`text-2xl font-bold ${rank.color}`}>{rank.label}</p>
-              <p className="text-3xl font-bold mt-2">{totalPoints}</p>
-              <p className="text-sm text-muted-foreground">pontos totais</p>
-              {nextRank && (
-                <div className="mt-4 w-full px-4">
-                  <div className="flex justify-between text-xs text-muted-foreground mb-1"><span>{rank.label}</span><span>{nextRank.label}</span></div>
-                  <div className="w-full bg-muted rounded-full h-2"><div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${Math.min(100, ((totalPoints - rank.min) / (nextRank.min - rank.min)) * 100)}%` }} /></div>
-                  <p className="text-xs text-muted-foreground text-center mt-1">{nextRank.min - totalPoints} pontos para {nextRank.label}</p>
+        {/* User Rank */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.1 }}>
+          <div className={`rounded-xl border border-border/30 bg-gradient-to-br ${userRank.gradient} opacity-10 backdrop-blur-sm p-8 text-center`}>
+            <div className="inline-block p-4 rounded-full bg-gradient-to-br from-primary to-orange-500 mb-4">
+              <Trophy className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-3xl font-bold mb-2">Seu Rank: {userRank.label}</h2>
+            <p className="text-lg font-semibold mb-1">{totalPoints} pontos</p>
+            <div className="w-full bg-border/30 rounded-full h-3 mt-4">
+              <div className="h-full rounded-full bg-gradient-to-r from-primary to-orange-500" style={{ width: `${Math.min((totalPoints / 1000) * 100, 100)}%` }} />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Achievements */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.2 }}>
+          <div className="rounded-xl border border-border/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm overflow-hidden">
+            <div className="p-6 border-b border-border/30">
+              <h2 className="text-lg font-bold">Conquistas Disponíveis</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+              {achievements.map((achievement, idx) => {
+                const Icon = achievement.icon;
+                return (
+                  <motion.div key={idx} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.05 }}>
+                    <div className="group relative overflow-hidden rounded-lg border border-border/30 bg-card/50 p-4 transition-all duration-300 hover:border-primary/50 hover:shadow-lg">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Icon className="w-4 h-4 text-primary" />
+                        </div>
+                        <Badge className="bg-gradient-to-r from-primary to-orange-500 text-white border-0 text-[10px]">{achievement.points} pts</Badge>
+                      </div>
+                      <h3 className="font-semibold text-sm mb-1">{achievement.label}</h3>
+                      <p className="text-xs text-muted-foreground">{achievement.description}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Leaderboard */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.3 }}>
+          <div className="rounded-xl border border-border/30 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm overflow-hidden">
+            <div className="p-6 border-b border-border/30">
+              <h2 className="text-lg font-bold">Ranking da Equipe</h2>
+            </div>
+            <div className="p-6">
+              {scores.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">Nenhum score registrado</p>
+              ) : (
+                <div className="space-y-2">
+                  {scores.slice(0, 10).map((score: any, idx: number) => (
+                    <motion.div key={idx} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
+                      <div className="flex items-center justify-between p-3 rounded-lg border border-border/30 bg-card/50 hover:bg-card/70 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-orange-500 flex items-center justify-center text-white font-bold text-sm">
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm">Usuário {idx + 1}</p>
+                            <p className="text-xs text-muted-foreground">{score.points} pontos</p>
+                          </div>
+                        </div>
+                        <Badge className="bg-gradient-to-r from-primary to-orange-500 text-white border-0">{getRank(score.points).label}</Badge>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
-
-          <Card className="md:col-span-2">
-            <CardHeader><CardTitle>Conquistas</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {achievements.map((a) => {
-                  const unlocked = unlockedAchievements.has(a.label);
-                  return (
-                    <div key={a.label} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${unlocked ? "bg-primary/10 border border-primary/20" : "bg-muted/30 opacity-60"}`}>
-                      <div className={`p-2 rounded-lg ${unlocked ? "bg-primary/20" : "bg-muted"}`}><a.icon className={`h-5 w-5 ${unlocked ? "text-primary" : "text-muted-foreground"}`} /></div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-sm">{a.label}</p>
-                          <Badge variant={unlocked ? "default" : "secondary"} className="text-xs">{a.points} pts</Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{a.description}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {scores.length > 0 && (
-          <Card>
-            <CardHeader><CardTitle>Ranking da Equipe</CardTitle></CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {scores.sort((a: any, b: any) => Number(b.totalPoints) - Number(a.totalPoints)).map((s: any, i: number) => (
-                  <div key={s.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-                    <div className="flex items-center gap-3">
-                      <span className={`text-lg font-bold ${i === 0 ? "text-yellow-500" : i === 1 ? "text-gray-400" : i === 2 ? "text-orange-700" : "text-muted-foreground"}`}>#{i + 1}</span>
-                      <span className="font-medium text-sm">Usuário {s.userId}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold">{Number(s.totalPoints || 0)} pts</span>
-                      <Badge className={getRank(Number(s.totalPoints || 0)).bg}>{getRank(Number(s.totalPoints || 0)).label}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </div>
+        </motion.div>
       </div>
     </DashboardLayout>
   );
