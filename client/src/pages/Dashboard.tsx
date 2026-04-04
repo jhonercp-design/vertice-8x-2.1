@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
+import DashboardLayout from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
 import {
   TrendingUp, Users, DollarSign, Target, Activity,
@@ -94,7 +95,8 @@ export default function Dashboard() {
   const recentAlerts = agcAlerts.slice(0, 3);
 
   return (
-    <div className="space-y-8">
+    <DashboardLayout>
+      <div className="space-y-8">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -240,6 +242,7 @@ export default function Dashboard() {
           </div>
         </motion.div>
       )}
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
