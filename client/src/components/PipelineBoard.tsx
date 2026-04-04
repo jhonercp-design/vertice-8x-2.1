@@ -6,13 +6,12 @@ import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-ki
 import { CSS } from "@dnd-kit/utilities";
 import { useSortable } from "@dnd-kit/sortable";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { motion } from "framer-motion";
-import { GripVertical, DollarSign, Calendar, User, AlertCircle, Filter, X, ArrowUp, ArrowDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { GripVertical, DollarSign, Calendar, AlertCircle, Filter, X, ArrowUp, ArrowDown, Check, Send, Trash2 } from "lucide-react";
 
 const STAGES = [
   { id: "new", label: "Novo", color: "bg-slate-100 dark:bg-slate-800", textColor: "text-slate-900 dark:text-slate-100" },
@@ -38,7 +37,7 @@ interface Lead {
   assignedTo?: number | null;
 }
 
-function LeadCard({ lead }: { lead: Lead }) {
+function LeadCard({ lead, isSelected, onToggleSelect }: { lead: Lead; isSelected: boolean; onToggleSelect: (id: number) => void }) {
   const {
     setNodeRef, setActivatorNodeRef, listeners, transform, transition, isDragging,
   } = useSortable({ id: lead.id });
@@ -54,13 +53,30 @@ function LeadCard({ lead }: { lead: Lead }) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="group relative overflow-hidden rounded-lg border border-border/30 bg-gradient-to-br from-card/80 to-card/40 p-3 hover:border-primary/50 transition-all cursor-grab active:cursor-grabbing"
+        className={`group relative overflow-hidden rounded-lg border p-3 transition-all cursor-grab active:cursor-grabbing ${
+          isSelected
+            ? "border-primary bg-primary/10"
+            : "border-border/30 bg-gradient-to-br from-card/80 to-card/40 hover:border-primary/50"
+        }`}
       >
         <div className="flex items-start gap-2">
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              onToggleSelect(lead.id);
+            }}
+            className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded border transition-all flex items-center justify-center ${
+              isSelected
+                ? "bg-primary border-primary"
+                : "border-border hover:border-primary"
+            }`}
+          >
+            {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+          </button>
           <div
             ref={setActivatorNodeRef}
             {...listeners}
-            className="mt-0.5 text-muted-foreground hover:text-foreground transition-colors"
+            className="mt-0.5 text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
           >
             <GripVertical className="w-4 h-4" />
           </div>
@@ -93,6 +109,8 @@ export default function PipelineBoard() {
   const [showFilters, setShowFilters] = useState(false);
   const [sortBy, setSortBy] = useState<"date" | "value" | "none">("none");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set());
+  const [bulkTargetStage, setBulkTargetStage] = useState<string>("");
   const [filters, setFilters] = useState({
     minValue: "",
     maxValue: "",
@@ -103,24 +121,17 @@ export default function PipelineBoard() {
 
   const filteredLeads = useMemo(() => {
     let result = optimisticLeads.filter((lead) => {
-      // Filter by value
       if (filters.minValue && lead.value && Number(lead.value) < Number(filters.minValue)) return false;
       if (filters.maxValue && lead.value && Number(lead.value) > Number(filters.maxValue)) return false;
-
-      // Filter by assigned to
       if (filters.assignedTo && lead.assignedTo !== Number(filters.assignedTo)) return false;
-
-      // Filter by date range
       if (filters.dateFrom || filters.dateTo) {
         const leadDate = new Date(lead.createdAt || "");
         if (filters.dateFrom && leadDate < new Date(filters.dateFrom)) return false;
         if (filters.dateTo && leadDate > new Date(filters.dateTo)) return false;
       }
-
       return true;
     });
 
-    // Apply sorting
     if (sortBy === "date") {
       result.sort((a, b) => {
         const dateA = new Date(a.createdAt || 0).getTime();
@@ -166,12 +177,10 @@ export default function PipelineBoard() {
     const lead = optimisticLeads.find((l) => l.id === leadId);
     if (!lead || lead.status === newStatus) return;
 
-    // Optimistic update
     setOptimisticLeads(
       optimisticLeads.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l)),
     );
 
-    // Server update
     updateLeadStatus.mutate(
       { id: leadId, status: newStatus },
       {
@@ -180,6 +189,52 @@ export default function PipelineBoard() {
         },
       },
     );
+  };
+
+  const handleToggleSelect = (leadId: number) => {
+    const newSelected = new Set(selectedLeads);
+    if (newSelected.has(leadId)) {
+      newSelected.delete(leadId);
+    } else {
+      newSelected.add(leadId);
+    }
+    setSelectedLeads(newSelected);
+  };
+
+  const handleBulkMove = async () => {
+    if (selectedLeads.size === 0 || !bulkTargetStage) return;
+
+    const leadIds = Array.from(selectedLeads);
+    
+    // Optimistic update
+    setOptimisticLeads(
+      optimisticLeads.map((l) => 
+        leadIds.includes(l.id) ? { ...l, status: bulkTargetStage as any } : l
+      ),
+    );
+
+    // Update each lead
+    for (const leadId of leadIds) {
+      updateLeadStatus.mutate(
+        { id: leadId, status: bulkTargetStage as any },
+        {
+          onError: () => {
+            setOptimisticLeads(optimisticLeads);
+          },
+        },
+      );
+    }
+
+    setSelectedLeads(new Set());
+    setBulkTargetStage("");
+  };
+
+  const handleSelectAll = () => {
+    if (selectedLeads.size === filteredLeads.length) {
+      setSelectedLeads(new Set());
+    } else {
+      setSelectedLeads(new Set(filteredLeads.map((l) => l.id)));
+    }
   };
 
   const handleClearFilters = () => {
@@ -277,7 +332,6 @@ export default function PipelineBoard() {
             exit={{ opacity: 0, height: 0 }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 p-4 rounded-lg border border-border/30 bg-card/50 overflow-hidden"
           >
-            {/* Value Range */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground">Valor Mínimo</label>
               <Input
@@ -298,8 +352,6 @@ export default function PipelineBoard() {
                 className="h-9"
               />
             </div>
-
-            {/* Date Range */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground">Data De</label>
               <Input
@@ -318,8 +370,6 @@ export default function PipelineBoard() {
                 className="h-9"
               />
             </div>
-
-            {/* Assigned To */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground">Responsável</label>
               <Select value={filters.assignedTo} onValueChange={(v) => setFilters({ ...filters, assignedTo: v })}>
@@ -335,6 +385,54 @@ export default function PipelineBoard() {
           </motion.div>
         )}
       </motion.div>
+
+      {/* Bulk Actions Bar */}
+      <AnimatePresence>
+        {selectedLeads.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="flex items-center gap-2 p-3 rounded-lg border border-primary/30 bg-primary/5"
+          >
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-foreground">
+                {selectedLeads.size} lead{selectedLeads.size !== 1 ? "s" : ""} selecionado{selectedLeads.size !== 1 ? "s" : ""}
+              </p>
+            </div>
+            <Select value={bulkTargetStage} onValueChange={setBulkTargetStage}>
+              <SelectTrigger className="w-40 h-9">
+                <SelectValue placeholder="Mover para..." />
+              </SelectTrigger>
+              <SelectContent>
+                {STAGES.map((stage) => (
+                  <SelectItem key={stage.id} value={stage.id}>
+                    {stage.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              onClick={handleBulkMove}
+              disabled={!bulkTargetStage}
+              className="gap-2"
+            >
+              <Send className="w-4 h-4" />
+              Mover
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setSelectedLeads(new Set())}
+              className="gap-2"
+            >
+              <X className="w-4 h-4" />
+              Cancelar
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Pipeline Board */}
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
@@ -365,7 +463,12 @@ export default function PipelineBoard() {
                       </div>
                     ) : (
                       leadsByStage[stage.id]?.map((lead) => (
-                        <LeadCard key={lead.id} lead={lead} />
+                        <LeadCard
+                          key={lead.id}
+                          lead={lead}
+                          isSelected={selectedLeads.has(lead.id)}
+                          onToggleSelect={handleToggleSelect}
+                        />
                       ))
                     )}
                   </div>

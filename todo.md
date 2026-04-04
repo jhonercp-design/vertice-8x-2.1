@@ -164,3 +164,14 @@
 - [x] Implementar ordenação por valor (ascendente/descendente)
 - [x] Indicador visual de ordenação ativa (setas up/down)
 - [x] Testar ordenação combinada com filtros
+
+
+## Seleção Múltipla e Movimentação em Massa
+- [x] Adicionar checkboxes aos cards de leads
+- [x] Implementar estado de seleção (selected leads array)
+- [x] Criar barra de ações flutuante para leads selecionados
+- [x] Implementar dropdown para escolher estágio de destino
+- [x] Adicionar botão "Mover selecionados"
+- [x] Implementar movimentação em massa no backend
+- [x] Adicionar confirmação antes de mover (otimistic update)
+- [x] Testar seleção/deselecção e movimentação
