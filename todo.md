@@ -147,3 +147,12 @@
 - [x] Adicionar confirmação de mudança de estágio (otimistic update)
 - [ ] Implementar histórico de movimentação
 - [x] Testar fluxo completo
+
+
+## Filtros Avançados do Pipeline
+- [x] Criar UI de filtros (data, valor, responsável)
+- [x] Implementar filtro por data (criação, última atividade)
+- [x] Implementar filtro por valor (mín, máx)
+- [x] Implementar filtro por responsável
+- [x] Adicionar botão de limpar filtros
+- [x] Testar filtros combinados

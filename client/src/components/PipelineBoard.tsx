@@ -9,8 +9,10 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
-import { GripVertical, DollarSign, Calendar, User, AlertCircle } from "lucide-react";
+import { GripVertical, DollarSign, Calendar, User, AlertCircle, Filter, X } from "lucide-react";
 
 const STAGES = [
   { id: "new", label: "Novo", color: "bg-slate-100 dark:bg-slate-800", textColor: "text-slate-900 dark:text-slate-100" },
@@ -124,20 +126,48 @@ export default function PipelineBoard() {
   const updateLeadStatus = trpc.leads.update.useMutation();
 
   const [optimisticLeads, setOptimisticLeads] = useState<Lead[]>(leads);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    minValue: "",
+    maxValue: "",
+    assignedTo: "",
+    dateFrom: "",
+    dateTo: "",
+  });
+
+  const filteredLeads = useMemo(() => {
+    return optimisticLeads.filter((lead) => {
+      // Filter by value
+      if (filters.minValue && lead.value && Number(lead.value) < Number(filters.minValue)) return false;
+      if (filters.maxValue && lead.value && Number(lead.value) > Number(filters.maxValue)) return false;
+
+      // Filter by assigned to
+      if (filters.assignedTo && lead.assignedTo !== Number(filters.assignedTo)) return false;
+
+      // Filter by date range
+      if (filters.dateFrom || filters.dateTo) {
+        const leadDate = new Date(lead.createdAt || "");
+        if (filters.dateFrom && leadDate < new Date(filters.dateFrom)) return false;
+        if (filters.dateTo && leadDate > new Date(filters.dateTo)) return false;
+      }
+
+      return true;
+    });
+  }, [optimisticLeads, filters]);
 
   const leadsByStage = useMemo(() => {
     const grouped: Record<string, Lead[]> = {};
     STAGES.forEach((stage) => {
       grouped[stage.id] = [];
     });
-    optimisticLeads.forEach((lead) => {
+    filteredLeads.forEach((lead) => {
       const stage = lead.status || "new";
       if (grouped[stage]) {
         grouped[stage].push(lead);
       }
     });
     return grouped;
-  }, [optimisticLeads]);
+  }, [filteredLeads]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -172,6 +202,18 @@ export default function PipelineBoard() {
     }
   };
 
+  const handleClearFilters = () => {
+    setFilters({
+      minValue: "",
+      maxValue: "",
+      assignedTo: "",
+      dateFrom: "",
+      dateTo: "",
+    });
+  };
+
+  const hasActiveFilters = Object.values(filters).some((v) => v !== "");
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
@@ -181,8 +223,103 @@ export default function PipelineBoard() {
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-      <div className="overflow-x-auto pb-4">
+    <div className="space-y-4">
+      {/* Filters Bar */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filtros Avançados
+            {hasActiveFilters && <Badge variant="secondary" className="ml-2">{Object.values(filters).filter(Boolean).length}</Badge>}
+          </Button>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearFilters}
+              className="gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+              Limpar
+            </Button>
+          )}
+        </div>
+
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 p-4 rounded-lg border border-border/30 bg-card/50"
+          >
+            {/* Value Range */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground">Valor Mínimo</label>
+              <Input
+                type="number"
+                placeholder="R$ 0"
+                value={filters.minValue}
+                onChange={(e) => setFilters({ ...filters, minValue: e.target.value })}
+                className="h-9"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground">Valor Máximo</label>
+              <Input
+                type="number"
+                placeholder="R$ 999999"
+                value={filters.maxValue}
+                onChange={(e) => setFilters({ ...filters, maxValue: e.target.value })}
+                className="h-9"
+              />
+            </div>
+
+            {/* Date Range */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground">Data De</label>
+              <Input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                className="h-9"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground">Data Até</label>
+              <Input
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+                className="h-9"
+              />
+            </div>
+
+            {/* Assigned To */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground">Responsável</label>
+              <Select value={filters.assignedTo} onValueChange={(v) => setFilters({ ...filters, assignedTo: v })}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos</SelectItem>
+                  {/* Add user options dynamically */}
+                  <SelectItem value="1">Você</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </motion.div>
+        )}
+      </motion.div>
+
+      {/* Pipeline Board */}
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+        <div className="overflow-x-auto pb-4">
         <div className="flex gap-6 min-w-max pr-4">
           {STAGES.map((stage) => (
             <PipelineColumn
@@ -194,6 +331,7 @@ export default function PipelineBoard() {
           ))}
         </div>
       </div>
-    </DndContext>
+      </DndContext>
+    </div>
   );
 }
