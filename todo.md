@@ -156,3 +156,11 @@
 - [x] Implementar filtro por responsável
 - [x] Adicionar botão de limpar filtros
 - [x] Testar filtros combinados
+
+
+## Ordenação do Pipeline
+- [x] Criar UI de ordenação (botões ou dropdown)
+- [x] Implementar ordenação por data de criação (ascendente/descendente)
+- [x] Implementar ordenação por valor (ascendente/descendente)
+- [x] Indicador visual de ordenação ativa (setas up/down)
+- [x] Testar ordenação combinada com filtros
