@@ -137,3 +137,13 @@
 ## UX - Tela de Login como entrada principal
 - [x] Redirecionar rota raiz (/) para /login sempre
 - [x] Garantir que o usuário sempre passe pela tela de login ao acessar a plataforma
+
+
+## Pipeline Drag-and-Drop (Melhores Práticas CRM)
+- [x] Pesquisar implementações de Pipedrive, Salesforce, HubSpot
+- [x] Implementar componente de pipeline com drag-and-drop
+- [x] Adicionar animações suaves e feedback visual
+- [x] Integrar com backend para atualizar status do lead
+- [x] Adicionar confirmação de mudança de estágio (otimistic update)
+- [ ] Implementar histórico de movimentação
+- [x] Testar fluxo completo

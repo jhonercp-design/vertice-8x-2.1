@@ -16,6 +16,7 @@ import {
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import PipelineBoard from "@/components/PipelineBoard";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   new: { label: "Novo", color: "text-blue-400", bg: "bg-blue-400/15" },
@@ -238,6 +239,11 @@ export default function CRM() {
             </TabsContent>
 
             <TabsContent value="pipeline">
+              <PipelineBoard />
+            </TabsContent>
+
+            {/* Old pipeline code - kept for reference */}
+            <TabsContent value="pipeline-old" className="hidden">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                 {pipelineStages.map((stage) => {
                   const stageLeads = leads.filter((l: any) => l.status === stage.key);
