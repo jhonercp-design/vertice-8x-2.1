@@ -221,3 +221,12 @@
 - [x] Fazer push de todo código para GitHub
 - [x] Verificar integridade do repositório
 - [x] Documentar novas features
+
+
+## Painel de Análise de Pipeline
+- [x] Criar procedures tRPC para coletar métricas (taxa conversão, tempo médio, valor total)
+- [x] Implementar componente de painel de análise com KPIs (6 KPIs principais)
+- [x] Adicionar gráficos de funil (funnel chart com Recharts)
+- [x] Adicionar gráficos de tendência temporal (line chart)
+- [x] Adicionar métricas de eficácia de automações (taxa sucesso, mensagens)
+- [x] Testar e publicar no GitHub
