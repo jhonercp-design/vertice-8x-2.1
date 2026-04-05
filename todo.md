@@ -175,3 +175,13 @@
 - [x] Implementar movimentação em massa no backend
 - [x] Adicionar confirmação antes de mover (otimistic update)
 - [x] Testar seleção/deselecção e movimentação
+
+
+## Gerenciamento de Pipelines (Criar e Editar)
+- [x] Criar schema para tabela pipelines (id, name, companyId, stages, createdAt, updatedAt)
+- [x] Criar procedures tRPC para CRUD de pipelines
+- [x] Implementar UI para criar novo pipeline (modal com nome)
+- [x] Implementar UI para editar pipeline (renomear, deletar)
+- [x] Implementar gerenciamento de estágios (adicionar, remover, reordenar)
+- [x] Integrar seleção de pipeline na página CRM (aba Settings)
+- [x] Testar criação, edição e deleção de pipelines (7 testes passando)

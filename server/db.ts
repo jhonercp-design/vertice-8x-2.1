@@ -22,6 +22,9 @@ import {
   gamificationScores,
   callTranscriptions,
   callAnalyses,
+  pipelines,
+  type Pipeline,
+  type InsertPipeline,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -552,4 +555,41 @@ export async function getAgcAlertsSummary(companyId: number) {
 export async function updateAgcAlertStatus(alertId: number, acknowledged: boolean, acknowledgedBy?: number) {
   const db = await getDb(); if (!db) throw new Error("DB not available");
   await db.update(agcAlerts).set({ acknowledged, acknowledgedBy }).where(eq(agcAlerts.id, alertId));
+}
+
+
+// ===== PIPELINES =====
+export async function getPipelines(companyId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(pipelines).where(eq(pipelines.companyId, companyId)).orderBy(desc(pipelines.updatedAt));
+}
+
+export async function getPipelineById(id: number) {
+  const db = await getDb(); if (!db) return null;
+  const result = await db.select().from(pipelines).where(eq(pipelines.id, id)).limit(1);
+  return result[0] || null;
+}
+
+export async function createPipeline(data: InsertPipeline) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  const result = await db.insert(pipelines).values(data);
+  return { id: result[0].insertId };
+}
+
+export async function updatePipeline(id: number, data: { name?: string; stages?: any; isDefault?: boolean }) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.update(pipelines).set(data).where(eq(pipelines.id, id));
+}
+
+export async function deletePipeline(id: number) {
+  const db = await getDb(); if (!db) throw new Error("DB not available");
+  await db.delete(pipelines).where(eq(pipelines.id, id));
+}
+
+export async function getDefaultPipeline(companyId: number) {
+  const db = await getDb(); if (!db) return null;
+  const result = await db.select().from(pipelines)
+    .where(and(eq(pipelines.companyId, companyId), eq(pipelines.isDefault, true)))
+    .limit(1);
+  return result[0] || null;
 }

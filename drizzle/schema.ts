@@ -106,6 +106,20 @@ export const deals = mysqlTable("deals", {
 export type Deal = typeof deals.$inferSelect;
 export type InsertDeal = typeof deals.$inferInsert;
 
+// ===== PIPELINES (Custom Pipelines) =====
+export const pipelines = mysqlTable("pipelines", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("companyId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  stages: json("stages").notNull(),
+  isDefault: boolean("isDefault").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Pipeline = typeof pipelines.$inferSelect;
+export type InsertPipeline = typeof pipelines.$inferInsert;
+
 // ===== ACTIVITIES (Timeline) =====
 export const activities = mysqlTable("activities", {
   id: int("id").autoincrement().primaryKey(),

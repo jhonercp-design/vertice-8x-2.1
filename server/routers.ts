@@ -397,6 +397,44 @@ Gere 1-3 alertas em JSON: [{"severity":"info|warning|critical","category":"strin
         return { success: true };
       }),
   }),
+
+  // ===== PIPELINES =====
+  pipelines: router({
+    list: protectedProcedure
+      .query(async ({ ctx }) => db.getPipelines(ctx.user.companyId || 1)),
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => db.getPipelineById(input.id)),
+    create: protectedProcedure
+      .input(z.object({ name: z.string().min(1), stages: z.array(z.object({ id: z.string(), label: z.string(), color: z.string() })) }))
+      .mutation(async ({ ctx, input }) => {
+        const companyId = ctx.user.companyId || 1;
+        return db.createPipeline({ companyId, name: input.name, stages: input.stages, isDefault: false });
+      }),
+    update: protectedProcedure
+      .input(z.object({ id: z.number(), name: z.string().optional(), stages: z.array(z.object({ id: z.string(), label: z.string(), color: z.string() })).optional(), isDefault: z.boolean().optional() }))
+      .mutation(async ({ input }) => {
+        await db.updatePipeline(input.id, { name: input.name, stages: input.stages, isDefault: input.isDefault });
+        return { success: true };
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deletePipeline(input.id);
+        return { success: true };
+      }),
+    setDefault: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const companyId = ctx.user.companyId || 1;
+        const pipelines = await db.getPipelines(companyId);
+        for (const p of pipelines) {
+          if (p.id !== input.id) await db.updatePipeline(p.id, { isDefault: false });
+        }
+        await db.updatePipeline(input.id, { isDefault: true });
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

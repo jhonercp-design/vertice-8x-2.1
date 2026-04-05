@@ -17,6 +17,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import PipelineBoard from "@/components/PipelineBoard";
+import { PipelineManager } from "@/components/PipelineManager";
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
   new: { label: "Novo", color: "text-blue-400", bg: "bg-blue-400/15" },
@@ -184,6 +185,7 @@ export default function CRM() {
               <TabsList className="bg-card/50 border border-border/30">
                 <TabsTrigger value="list">Lista</TabsTrigger>
                 <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+                <TabsTrigger value="settings">Configurações</TabsTrigger>
               </TabsList>
               <div className="flex-1 flex gap-2">
                 <div className="relative flex-1 max-w-sm">
@@ -240,6 +242,12 @@ export default function CRM() {
 
             <TabsContent value="pipeline">
               <PipelineBoard />
+            </TabsContent>
+
+            <TabsContent value="settings">
+              <div className="space-y-6">
+                <PipelineManager />
+              </div>
             </TabsContent>
 
             {/* Old pipeline code - kept for reference */}
