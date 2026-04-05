@@ -185,3 +185,39 @@
 - [x] Implementar gerenciamento de estágios (adicionar, remover, reordenar)
 - [x] Integrar seleção de pipeline na página CRM (aba Settings)
 - [x] Testar criação, edição e deleção de pipelines (7 testes passando)
+
+
+## Sistema Inteligente de Pipeline (Em Progresso)
+- [ ] Permitir edição de estágios em tempo real (renomear, reordenar, deletar)
+- [ ] Criar sistema de automação de follow-up (triggers por estágio)
+- [ ] Integrar WhatsApp para enviar mensagens automáticas ao mudar estágio
+- [ ] Implementar análise inteligente com IA para cada movimentação
+- [ ] Registrar histórico de movimentação com análise automática
+- [ ] Otimizar performance e testar fluxo completo
+
+
+## Automação de Follow-up (Fase 2)
+- [x] Criar schema para automações (triggers, templates, status)
+- [x] Implementar procedures tRPC para CRUD de automações
+- [x] Criar triggers automáticos por estágio (ex: 3 dias sem movimento)
+- [x] Integrar com sistema de notificações
+- [x] Testar automações
+
+## Integração WhatsApp (Fase 3)
+- [x] Criar schema para mensagens WhatsApp (lead, template, status)
+- [x] Implementar webhook para receber mensagens
+- [x] Integrar envio automático ao mudar estágio
+- [x] Criar templates de mensagens por estágio
+- [x] Testar fluxo completo
+
+## Análise Inteligente com IA (Fase 4)
+- [x] Criar schema para análise de movimentações
+- [x] Implementar procedure para analisar com LLM
+- [x] Gerar insights automáticos por mudança de estágio
+- [x] Armazenar análises no banco
+- [x] Testar análises
+
+## Publicação no GitHub (Fase 5)
+- [x] Fazer push de todo código para GitHub
+- [x] Verificar integridade do repositório
+- [x] Documentar novas features
